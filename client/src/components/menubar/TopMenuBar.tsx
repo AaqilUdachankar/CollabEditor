@@ -58,7 +58,7 @@ export const TopMenuBar: React.FC = () => {
     const activeTab = tabs.find((t) => t.id === activeTabId);
     if (!activeTab) {
       openPanel('output');
-      addOutputLog('No active file to run. Open a runnable file (.js, .py, .cpp).', 'error');
+      addOutputLog('No active file to run. Open a runnable file (.js, .py, .cpp, .c, .java).', 'error');
       return;
     }
 

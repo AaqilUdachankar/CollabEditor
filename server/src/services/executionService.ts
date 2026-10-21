@@ -52,12 +52,14 @@ export class ExecutionService {
       size: Buffer.byteLength(contentToRun, 'utf-8'),
     });
 
+    const startTime = Date.now();
     let cmd = '';
     let args: string[] = [];
 
     switch (ext) {
       case '.js':
       case '.mjs':
+      case '.cjs':
         cmd = process.execPath;
         args = [fullFilePath];
         break;
@@ -65,16 +67,57 @@ export class ExecutionService {
         cmd = 'python';
         args = ['-u', fullFilePath];
         break;
+      case '.java':
+        cmd = 'java';
+        args = [fullFilePath];
+        break;
       case '.cpp':
+      case '.c++':
+      case '.cc':
+      case '.cxx':
+      case '.cp':
       case '.c': {
+        const isCpp = ext !== '.c';
+        const compiler = isCpp ? 'g++' : 'gcc';
         const outName = path.join(projectDir, process.platform === 'win32' ? 'runner.exe' : 'runner');
-        const compiler = ext === '.cpp' ? 'g++' : 'gcc';
-        cmd = process.platform === 'win32' ? 'cmd.exe' : 'sh';
-        const buildAndRun = `"${compiler}" "${fullFilePath}" -o "${outName}" && "${outName}"`;
-        args = process.platform === 'win32' ? ['/c', buildAndRun] : ['-c', buildAndRun];
+
+        // Compile first with distinct arguments (no shell mangling of paths with spaces)
+        const compileRes = await new Promise<{ stdout: string; stderr: string; code: number | null }>((resolveCompile) => {
+          let cStdout = '';
+          let cStderr = '';
+          const compileProc = spawn(compiler, [fullFilePath, '-o', outName], {
+            cwd: projectDir,
+            env: this.getSafeEnv(),
+            shell: false,
+          });
+
+          compileProc.stdout?.on('data', (d) => { cStdout += d.toString(); });
+          compileProc.stderr?.on('data', (d) => { cStderr += d.toString(); });
+          compileProc.on('error', (err) => {
+            resolveCompile({ stdout: cStdout, stderr: cStderr + `\nCompiler error: ${err.message}`, code: 1 });
+          });
+          compileProc.on('close', (code) => {
+            resolveCompile({ stdout: cStdout, stderr: cStderr, code });
+          });
+        });
+
+        if (compileRes.code !== 0) {
+          return {
+            stdout: compileRes.stdout,
+            stderr: compileRes.stderr || `[CollabIDE Compilation] Build failed with exit code ${compileRes.code}`,
+            exitCode: compileRes.code ?? 1,
+            durationMs: Date.now() - startTime,
+            command: `${compiler} "${file.name}" -o runner`,
+            timedOut: false,
+          };
+        }
+
+        cmd = outName;
+        args = [];
         break;
       }
       case '.html':
+      case '.htm':
         return {
           stdout: `Web preview ready. Open browser preview at project root: ${file.path}\n`,
           stderr: '',
@@ -87,7 +130,6 @@ export class ExecutionService {
         throw new Error(`Execution not supported for file type "${ext}". Run files via the integrated terminal.`);
     }
 
-    const startTime = Date.now();
     let stdoutBuffer = '';
     let stderrBuffer = '';
     let timedOut = false;

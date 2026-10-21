@@ -73,7 +73,12 @@ export const FileTreeNode: React.FC<FileTreeNodeProps> = ({ node, level, onConte
         return <FileJson size={15} color="#eab308" />;
       case 'py':
         return <FileCode size={15} color="#10b981" />;
+      case 'java':
+        return <FileCode size={15} color="#ea580c" />;
       case 'cpp':
+      case 'c++':
+      case 'cc':
+      case 'cxx':
       case 'c':
         return <FileCode size={15} color="#6366f1" />;
       case 'md':
