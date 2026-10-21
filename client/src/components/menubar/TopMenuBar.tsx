@@ -90,9 +90,9 @@ export const TopMenuBar: React.FC = () => {
     <header className="nexus-topbar" ref={menuBarRef}>
       {/* Left: Branding & Menus */}
       <div className="nexus-topbar-left">
-        <div className="nexus-logo" title="Nexus Studio - Collaborative IDE">
+        <div className="nexus-logo" title="CollabIDE - Collaborative IDE">
           <Code2 size={18} />
-          <span>Nexus</span>
+          <span>CollabIDE</span>
         </div>
 
         <nav className="nexus-menu-container">

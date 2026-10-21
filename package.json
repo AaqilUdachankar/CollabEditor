@@ -1,8 +1,8 @@
 {
-  "name": "nexus-ide-root",
+  "name": "collabide-root",
   "version": "1.0.0",
   "private": true,
-  "description": "Nexus Studio - VS Code-Inspired Collaborative Cloud IDE",
+  "description": "CollabIDE - VS Code-Inspired Collaborative Cloud IDE",
   "scripts": {
     "dev": "concurrently -n \"SERVER,CLIENT\" -c \"cyan,magenta\" \"npm run dev:server\" \"npm run dev:client\"",
     "dev:server": "npm run dev --prefix server",
@@ -18,7 +18,7 @@
     "fullstack",
     "vscode"
   ],
-  "author": "Nexus Team",
+  "author": "CollabIDE Team",
   "license": "MIT",
   "devDependencies": {
     "concurrently": "^10.0.6"

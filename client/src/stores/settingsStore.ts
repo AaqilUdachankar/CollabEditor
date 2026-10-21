@@ -31,7 +31,7 @@ const defaultSettings: ISettings = {
 export const useSettingsStore = create<SettingsState>((set) => ({
   settings: {
     ...defaultSettings,
-    ...(JSON.parse(localStorage.getItem('nexus_settings') || '{}')),
+    ...(JSON.parse(localStorage.getItem('collabide_settings') || localStorage.getItem('nexus_settings') || '{}')),
   },
   commandPaletteOpen: false,
   quickOpenOpen: false,
@@ -43,7 +43,7 @@ export const useSettingsStore = create<SettingsState>((set) => ({
   updateSettings: (partial) => {
     set((state) => {
       const updated = { ...state.settings, ...partial };
-      localStorage.setItem('nexus_settings', JSON.stringify(updated));
+      localStorage.setItem('collabide_settings', JSON.stringify(updated));
       return { settings: updated };
     });
   },

@@ -19,7 +19,7 @@ export function bindYjsToMonaco(
 ): YjsSession {
   const roomName = `${projectId}::${fileId}`;
   const doc = new Y.Doc();
-  const token = localStorage.getItem('nexus_token') || '';
+  const token = localStorage.getItem('collabide_token') || localStorage.getItem('nexus_token') || '';
 
   const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
   const wsUrl = `${wsProtocol}//${window.location.host}/yjs`;

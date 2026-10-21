@@ -58,12 +58,12 @@ export class ProjectService {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Nexus Vanilla App</title>
+  <title>CollabIDE Vanilla App</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <div class="card">
-    <h1>🚀 Welcome to Nexus Studio!</h1>
+    <h1>🚀 Welcome to CollabIDE!</h1>
     <p>A full-stack collaborative IDE running directly in your browser.</p>
     <button id="counter-btn">Clicks: 0</button>
   </div>
@@ -119,16 +119,16 @@ btn.addEventListener('click', () => {
   btn.textContent = \`Clicks: \${count}\`;
 });
 
-console.log('Nexus App initialized successfully.');`,
-        'README.md': `# Nexus Vanilla Web Template
-Welcome to your new collaborative project in Nexus Studio.
+console.log('CollabIDE App initialized successfully.');`,
+        'README.md': `# CollabIDE Vanilla Web Template
+Welcome to your new collaborative project in CollabIDE.
 - Edit \`index.html\`, \`style.css\`, or \`main.js\`.
 - Real-time changes appear instantly across all collaborators.
 - Click Run or use the terminal to test your code!`
       },
       'react-vite': {
         'package.json': `{
-  "name": "nexus-react-vite-app",
+  "name": "collabide-react-vite-app",
   "private": true,
   "version": "0.0.1",
   "type": "module",
@@ -146,7 +146,7 @@ Welcome to your new collaborative project in Nexus Studio.
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Nexus React App</title>
+    <title>CollabIDE React App</title>
   </head>
   <body>
     <div id="root"></div>
@@ -170,7 +170,7 @@ export default function App() {
 
   return (
     <div className="container">
-      <h1>⚡ Nexus React + Vite App</h1>
+      <h1>⚡ CollabIDE React + Vite App</h1>
       <p>Real-time collaborative editing with Monaco & Yjs.</p>
       <button onClick={() => setCount(c => c + 1)}>
         Count is {count}
@@ -202,12 +202,12 @@ button {
   border-radius: 4px;
   cursor: pointer;
 }`,
-        'README.md': `# Nexus React + Vite Template
-A modern React starter configured for Nexus Studio collaborative development.`
+        'README.md': `# CollabIDE React + Vite Template
+A modern React starter configured for CollabIDE collaborative development.`
       },
       'node-express': {
         'package.json': `{
-  "name": "nexus-express-api",
+  "name": "collabide-express-api",
   "version": "1.0.0",
   "main": "src/index.js",
   "scripts": {
@@ -224,7 +224,7 @@ const PORT = process.env.PORT || 3000;
 app.use(express.json());
 
 app.get('/', (req, res) => {
-  res.json({ message: 'Hello from Nexus Express API!', timestamp: new Date().toISOString() });
+  res.json({ message: 'Hello from CollabIDE Express API!', timestamp: new Date().toISOString() });
 });
 
 app.get('/api/health', (req, res) => {
@@ -232,7 +232,7 @@ app.get('/api/health', (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(\`Nexus API server running on port \${PORT}\`);
+  console.log(\`CollabIDE API server running on port \${PORT}\`);
 });`,
         'README.md': `# Node & Express API Template
 Run with: \`node src/index.js\` from the terminal.`
@@ -243,11 +243,11 @@ from utils import greet, calculate_fibonacci
 
 def main():
     print("=" * 45)
-    print("🚀 Running Python application in Nexus Studio!")
+    print("🚀 Running Python application in CollabIDE!")
     print(f"Python Version: {sys.version.split()[0]}")
     print("=" * 45)
     
-    greeting = greet("Nexus Developer")
+    greeting = greet("CollabIDE Developer")
     print(greeting)
     
     print("\\nGenerating Fibonacci Sequence:")
@@ -282,7 +282,7 @@ Execute by clicking "Run File" or running \`python main.py\` in the terminal pan
 
 int main() {
     std::cout << "========================================" << std::endl;
-    std::cout << "🚀 Nexus Studio C++ Workspace" << std::endl;
+    std::cout << "🚀 CollabIDE C++ Workspace" << std::endl;
     std::cout << "========================================" << std::endl;
 
     std::vector<int> numbers = {10, 20, 30, 40, 50};

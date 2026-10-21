@@ -18,13 +18,13 @@ interface AuthState {
 
 export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
-  token: localStorage.getItem('nexus_token'),
+  token: localStorage.getItem('collabide_token') || localStorage.getItem('nexus_token'),
   isAuthenticated: false,
   isLoading: true,
   error: null,
 
   loadMe: async () => {
-    const token = localStorage.getItem('nexus_token');
+    const token = localStorage.getItem('collabide_token') || localStorage.getItem('nexus_token');
     if (!token) {
       await get().loginAsGuest();
       return;
@@ -36,6 +36,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       initSocket(token);
       set({ user, token, isAuthenticated: true, isLoading: false });
     } catch {
+      localStorage.removeItem('collabide_token');
       localStorage.removeItem('nexus_token');
       disconnectSocket();
       await get().loginAsGuest();
@@ -46,7 +47,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const res = await api.auth.guest();
-      localStorage.setItem('nexus_token', res.token);
+      localStorage.setItem('collabide_token', res.token);
       initSocket(res.token);
       set({ user: res.user, token: res.token, isAuthenticated: true, isLoading: false });
     } catch (err: any) {
@@ -58,7 +59,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const res = await api.auth.login({ email, password });
-      localStorage.setItem('nexus_token', res.token);
+      localStorage.setItem('collabide_token', res.token);
       initSocket(res.token);
       set({ user: res.user, token: res.token, isAuthenticated: true, isLoading: false });
     } catch (err: any) {
@@ -71,7 +72,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const res = await api.auth.signup({ email, username, password });
-      localStorage.setItem('nexus_token', res.token);
+      localStorage.setItem('collabide_token', res.token);
       initSocket(res.token);
       set({ user: res.user, token: res.token, isAuthenticated: true, isLoading: false });
     } catch (err: any) {
@@ -86,6 +87,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     } catch {
       // ignore
     }
+    localStorage.removeItem('collabide_token');
     localStorage.removeItem('nexus_token');
     disconnectSocket();
     set({ user: null, token: null, isAuthenticated: false });

@@ -1,6 +1,6 @@
-# Nexus Studio — VS Code-Inspired Collaborative Cloud IDE
+# CollabIDE — VS Code-Inspired Collaborative Cloud IDE
 
-Nexus Studio is a full-stack, browser-based collaborative coding platform inspired by the interaction patterns, layout, density, and visual design of Visual Studio Code. Built with a TypeScript-first architecture, it provides real-time conflict-free concurrent editing (Yjs CRDTs), multi-user cursor awareness, persistent project workspaces, integrated xterm.js terminals, Git source control, and isolated code execution runtimes.
+CollabIDE is a full-stack, browser-based collaborative coding platform inspired by the interaction patterns, layout, density, and visual design of Visual Studio Code. Built with a TypeScript-first architecture, it provides real-time conflict-free concurrent editing (Yjs CRDTs), multi-user cursor awareness, persistent project workspaces, integrated xterm.js terminals, Git source control, and isolated code execution runtimes.
 
 ---
 
@@ -106,15 +106,15 @@ Default configuration in `server/.env`:
 ```env
 PORT=5000
 NODE_ENV=development
-MONGODB_URI=mongodb://localhost:27017/nexus_ide
-JWT_SECRET=nexus_collaborative_ide_super_secret_jwt_key_987216
+MONGODB_URI=mongodb://localhost:27017/collabide
+JWT_SECRET=collabide_super_secret_jwt_key_987216
 CORS_ORIGIN=http://localhost:5173
 STORAGE_DIR=./data/projects
 EXECUTION_TIMEOUT_MS=15000
 MAX_OUTPUT_BUFFER_BYTES=1048576
 ```
 
-> **Note on Database**: If a local or cloud MongoDB server is available at `MONGODB_URI`, Mongoose connects automatically. If MongoDB is not reachable, Nexus IDE automatically activates its local persistent JSON document store at `./data/db/*.json`. The server never crashes and all data is persistently saved!
+> **Note on Database**: If a local or cloud MongoDB server is available at `MONGODB_URI`, Mongoose connects automatically. If MongoDB is not reachable, CollabIDE automatically activates its local persistent JSON document store at `./data/db/*.json`. The server never crashes and all data is persistently saved!
 
 ### 3. Running Locally
 
@@ -134,7 +134,7 @@ Open `http://localhost:5173` in your browser.
 
 ## 🧪 Automated Testing
 
-Nexus Studio includes an automated test suite covering all 6 phases:
+CollabIDE includes an automated test suite covering all 6 phases:
 
 ```bash
 npm test --prefix server

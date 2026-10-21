@@ -47,8 +47,8 @@ export class GitService {
   static async initRepo(projectId: string): Promise<void> {
     await this.runGit(projectId, ['init']);
     try {
-      await this.runGit(projectId, ['config', 'user.name', 'Nexus IDE User']);
-      await this.runGit(projectId, ['config', 'user.email', 'developer@nexus-ide.local']);
+      await this.runGit(projectId, ['config', 'user.name', 'CollabIDE User']);
+      await this.runGit(projectId, ['config', 'user.email', 'developer@collabide.local']);
     } catch {
       // Configuration fallback
     }
@@ -121,7 +121,7 @@ export class GitService {
       throw new Error('Commit message cannot be empty');
     }
 
-    const author = authorName ? `${authorName} <${authorName.toLowerCase()}@nexus-ide.local>` : 'Nexus User <dev@nexus-ide.local>';
+    const author = authorName ? `${authorName} <${authorName.toLowerCase()}@collabide.local>` : 'CollabIDE User <dev@collabide.local>';
     const { stdout } = await this.runGit(projectId, ['commit', '-m', message.trim(), `--author=${author}`]);
     return stdout.trim();
   }

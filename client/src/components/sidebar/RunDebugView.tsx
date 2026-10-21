@@ -25,14 +25,14 @@ export const RunDebugView: React.FC = () => {
     setIsRunning(true);
     setLastStatus('Running...');
     openPanel('output');
-    addOutputLog(`[Nexus Runner] Launching ${activeTab.title} in project workspace...`, 'info');
+    addOutputLog(`[CollabIDE Runner] Launching ${activeTab.title} in project workspace...`, 'info');
 
     try {
       const res = await api.execution.runFile(currentProject.id, activeTab.fileId);
       if (res.stdout) addOutputLog(res.stdout, 'info');
       if (res.stderr) addOutputLog(res.stderr, 'error');
       const msg = `Process exited with code ${res.exitCode} (${res.durationMs}ms)`;
-      addOutputLog(`[Nexus Runner] ${msg}`, res.exitCode === 0 ? 'success' : 'error');
+      addOutputLog(`[CollabIDE Runner] ${msg}`, res.exitCode === 0 ? 'success' : 'error');
       setLastStatus(res.exitCode === 0 ? 'Success' : `Failed (code ${res.exitCode})`);
     } catch (err: any) {
       addOutputLog(`Execution failed: ${err.message}`, 'error');
@@ -46,7 +46,7 @@ export const RunDebugView: React.FC = () => {
     if (!currentProject) return;
     try {
       await api.execution.stopAll(currentProject.id);
-      addOutputLog('[Nexus Runner] Stopped all running processes.', 'info');
+      addOutputLog('[CollabIDE Runner] Stopped all running processes.', 'info');
       setIsRunning(false);
       setLastStatus('Stopped');
     } catch (err: any) {

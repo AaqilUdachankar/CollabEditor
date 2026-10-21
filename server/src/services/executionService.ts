@@ -123,7 +123,7 @@ export class ExecutionService {
         this.activeProcesses.delete(procId);
         resolve({
           stdout: stdoutBuffer,
-          stderr: stderrBuffer + (timedOut ? `\n[Nexus Execution] Process timed out after ${config.executionTimeoutMs / 1000} seconds.` : ''),
+          stderr: stderrBuffer + (timedOut ? `\n[CollabIDE Execution] Process timed out after ${config.executionTimeoutMs / 1000} seconds.` : ''),
           exitCode: timedOut ? 124 : code,
           durationMs: Date.now() - startTime,
           command: `${cmd} ${args.join(' ')}`,

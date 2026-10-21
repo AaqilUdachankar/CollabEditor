@@ -3,7 +3,7 @@ import { IUser, IProject, IFileNode, IGitStatus, IGitCommit } from '../types/ide
 const API_BASE = '/api';
 
 function getAuthHeaders(): HeadersInit {
-  const token = localStorage.getItem('nexus_token');
+  const token = localStorage.getItem('collabide_token') || localStorage.getItem('nexus_token');
   return {
     'Content-Type': 'application/json',
     ...(token ? { Authorization: `Bearer ${token}` } : {}),

@@ -139,7 +139,7 @@ export const MonacoInstance: React.FC<MonacoInstanceProps> = ({ isSplit = false 
           gap: 12,
         }}
       >
-        <div style={{ fontSize: 32, opacity: 0.2 }}>⚡ Nexus Studio</div>
+        <div style={{ fontSize: 32, opacity: 0.2 }}>⚡ CollabIDE</div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 12 }}>
           <div>Show All Commands: <kbd style={{ background: '#2d2d2d', padding: '2px 6px', borderRadius: 3 }}>Ctrl+Shift+P</kbd></div>
           <div>Go to File: <kbd style={{ background: '#2d2d2d', padding: '2px 6px', borderRadius: 3 }}>Ctrl+P</kbd></div>

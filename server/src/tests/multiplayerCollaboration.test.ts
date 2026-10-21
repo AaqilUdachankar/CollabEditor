@@ -29,7 +29,7 @@ function assert(condition: boolean, testName: string, detail: string = '') {
 
 async function runMultiplayerWireTest() {
   console.log('\n=======================================================');
-  console.log('👥 Running Nexus Real-Time Multiplayer Wire Collaboration Test');
+  console.log('👥 Running CollabIDE Real-Time Multiplayer Wire Collaboration Test');
   console.log('=======================================================\n');
 
   await initDatabase();
@@ -40,7 +40,7 @@ async function runMultiplayerWireTest() {
   // 1. Create User A (Alice)
   const userA = await UserRepository.create({
     id: `user-a-${timestamp}`,
-    email: `alice_${timestamp}@nexus.test`,
+    email: `alice_${timestamp}@collabide.test`,
     username: 'Alice',
     passwordHash,
     avatarColor: '#ec4899',
@@ -52,7 +52,7 @@ async function runMultiplayerWireTest() {
   // 2. Create User B (Bob)
   const userB = await UserRepository.create({
     id: `user-b-${timestamp}`,
-    email: `bob_${timestamp}@nexus.test`,
+    email: `bob_${timestamp}@collabide.test`,
     username: 'Bob',
     passwordHash,
     avatarColor: '#3b82f6',

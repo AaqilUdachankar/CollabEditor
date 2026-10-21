@@ -46,7 +46,7 @@ app.get('/api/health', (_req, res) => {
     status: 'ok',
     uptime: process.uptime(),
     timestamp: new Date().toISOString(),
-    service: 'Nexus Collaborative IDE Backend',
+    service: 'CollabIDE Backend',
   });
 });
 
@@ -86,7 +86,7 @@ async function startServer() {
 
   server.listen(config.port, () => {
     console.log(`=======================================================`);
-    console.log(`🚀 Nexus IDE Backend running on http://localhost:${config.port}`);
+    console.log(`🚀 CollabIDE Backend running on http://localhost:${config.port}`);
     console.log(`📡 WebSocket Yjs endpoint: ws://localhost:${config.port}/yjs`);
     console.log(`💻 Terminal WebSocket endpoint: ws://localhost:${config.port}/term`);
     console.log(`⚡ Socket.IO path: http://localhost:${config.port}/socket.io`);

@@ -1,5 +1,5 @@
 {
-  "name": "nexus-ide-server",
+  "name": "collabide-server",
   "version": "1.0.0",
   "private": true,
   "type": "module",

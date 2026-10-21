@@ -54,7 +54,7 @@ export const AuthModal: React.FC = () => {
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, fontWeight: 600, color: '#38bdf8' }}>
             <Code2 size={20} />
-            <span>{isSignup ? 'Create Nexus Account' : 'Sign in to Nexus Studio'}</span>
+            <span>{isSignup ? 'Create CollabIDE Account' : 'Sign in to CollabIDE'}</span>
           </div>
           <button
             onClick={() => setAuthModalOpen(false)}
@@ -140,7 +140,7 @@ export const AuthModal: React.FC = () => {
               <input
                 type="email"
                 required
-                placeholder="dev@nexus-ide.local"
+                placeholder="dev@collabide.local"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 style={{

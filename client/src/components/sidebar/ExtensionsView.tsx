@@ -15,7 +15,7 @@ const EXTENSIONS: ExtensionItem[] = [
   {
     id: 'ts-js-features',
     name: 'TypeScript & JavaScript Features',
-    author: 'Nexus Built-in',
+    author: 'CollabIDE Built-in',
     description: 'Rich Monaco IntelliSense, syntax validation, diagnostics, and completions.',
     version: 'v5.7.0',
     category: 'Programming Languages',
@@ -24,7 +24,7 @@ const EXTENSIONS: ExtensionItem[] = [
   {
     id: 'python-support',
     name: 'Python Language Tools',
-    author: 'Nexus Built-in',
+    author: 'CollabIDE Built-in',
     description: 'Python syntax highlighting, formatting, indentation, and live runner.',
     version: 'v3.14.0',
     category: 'Programming Languages',
@@ -33,7 +33,7 @@ const EXTENSIONS: ExtensionItem[] = [
   {
     id: 'cpp-clang-tools',
     name: 'C/C++ Tools',
-    author: 'Nexus Built-in',
+    author: 'CollabIDE Built-in',
     description: 'C/C++ syntax support, MinGW GCC compilation and debugging.',
     version: 'v16.2.0',
     category: 'Programming Languages',
@@ -42,7 +42,7 @@ const EXTENSIONS: ExtensionItem[] = [
   {
     id: 'html-css-tools',
     name: 'HTML & CSS Language Support',
-    author: 'Nexus Built-in',
+    author: 'CollabIDE Built-in',
     description: 'Emmet completion, CSS color decorators, HTML entity suggestions.',
     version: 'v1.4.2',
     category: 'Web',
@@ -51,7 +51,7 @@ const EXTENSIONS: ExtensionItem[] = [
   {
     id: 'yjs-collaboration',
     name: 'Yjs Real-Time CRDT Engine',
-    author: 'Nexus Team',
+    author: 'CollabIDE Team',
     description: 'Peer-to-peer conflict-free document synchronization and remote cursor awareness.',
     version: 'v13.6.0',
     category: 'Collaboration',
@@ -60,7 +60,7 @@ const EXTENSIONS: ExtensionItem[] = [
   {
     id: 'xterm-terminal',
     name: 'Interactive Xterm.js Shell',
-    author: 'Nexus Team',
+    author: 'CollabIDE Team',
     description: 'Full-featured terminal emulation with FitAddon and WebLinks.',
     version: 'v5.5.0',
     category: 'Terminal',
