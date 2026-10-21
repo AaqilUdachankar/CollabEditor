@@ -1,0 +1,26 @@
+{
+  "name": "nexus-ide-root",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Nexus Studio - VS Code-Inspired Collaborative Cloud IDE",
+  "scripts": {
+    "dev": "concurrently -n \"SERVER,CLIENT\" -c \"cyan,magenta\" \"npm run dev:server\" \"npm run dev:client\"",
+    "dev:server": "npm run dev --prefix server",
+    "dev:client": "npm run dev --prefix client",
+    "build": "npm run build --prefix client && npm run build --prefix server",
+    "test": "npm run test --prefix server"
+  },
+  "keywords": [
+    "collaborative-ide",
+    "monaco",
+    "yjs",
+    "crdt",
+    "fullstack",
+    "vscode"
+  ],
+  "author": "Nexus Team",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^10.0.6"
+  }
+}
