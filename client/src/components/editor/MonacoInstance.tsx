@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import Editor, { OnMount } from '@monaco-editor/react';
 import type * as monaco from 'monaco-editor';
 import { useProjectStore } from '../../stores/projectStore.js';
@@ -24,12 +24,12 @@ export const MonacoInstance: React.FC<MonacoInstanceProps> = ({ isSplit = false 
   const activeFile = files.find((f) => f.id === activeTab?.fileId);
 
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
+  const [editorInstance, setEditorInstance] = useState<monaco.editor.IStandaloneCodeEditor | null>(null);
   const yjsSessionRef = useRef<YjsSession | null>(null);
 
   // Bind and maintain Yjs multiplayer CRDT & live cursor awareness
   useEffect(() => {
-    const editor = editorRef.current;
-    if (!editor || !currentProject || !activeTab) return;
+    if (!editorInstance || !currentProject || !activeTab) return;
 
     if (yjsSessionRef.current) {
       yjsSessionRef.current.destroy();
@@ -40,7 +40,7 @@ export const MonacoInstance: React.FC<MonacoInstanceProps> = ({ isSplit = false 
       const session = bindYjsToMonaco(
         currentProject.id,
         activeTab.fileId,
-        editor,
+        editorInstance,
         user
       );
       yjsSessionRef.current = session;
@@ -54,10 +54,11 @@ export const MonacoInstance: React.FC<MonacoInstanceProps> = ({ isSplit = false 
         yjsSessionRef.current = null;
       }
     };
-  }, [currentProject?.id, activeTab?.fileId, user?.id, user?.username, user?.avatarColor]);
+  }, [editorInstance, currentProject?.id, activeTab?.fileId, user?.id, user?.username, user?.avatarColor]);
 
   const handleEditorMount: OnMount = (editor, monacoInstance) => {
     editorRef.current = editor;
+    setEditorInstance(editor);
 
     // Define custom theme matching VS Code dark charcoal if needed
     monacoInstance.editor.defineTheme('nexus-dark', {

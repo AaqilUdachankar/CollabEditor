@@ -45,32 +45,32 @@ export function bindYjsToMonaco(
     colorLight: `${userColor}40`,
   });
 
-  // Track initial cursor selection in awareness
-  const initialSel = editor.getSelection();
-  if (initialSel) {
-    const anchor = model.getOffsetAt(initialSel.getStartPosition());
-    const head = model.getOffsetAt(initialSel.getEndPosition());
-    provider.awareness.setLocalStateField('selection', {
-      anchor: Y.createRelativePositionFromTypeIndex(ytext, anchor),
-      head: Y.createRelativePositionFromTypeIndex(ytext, head),
-    });
-  }
-
-  // Track cursor movements and broadcast in real-time
-  const cursorListener = editor.onDidChangeCursorPosition(() => {
+  // Track cursor and selection changes to broadcast across the room
+  const broadcastSelection = () => {
+    if (!model) return;
     const sel = editor.getSelection();
-    if (sel && model) {
-      const anchor = model.getOffsetAt(sel.getStartPosition());
-      const head = model.getOffsetAt(sel.getEndPosition());
+    if (sel) {
+      let anchor = model.getOffsetAt(sel.getStartPosition());
+      let head = model.getOffsetAt(sel.getEndPosition());
+      if (sel.getDirection() === 1) {
+        // RTL selection
+        const tmp = anchor;
+        anchor = head;
+        head = tmp;
+      }
       provider.awareness.setLocalStateField('selection', {
         anchor: Y.createRelativePositionFromTypeIndex(ytext, anchor),
         head: Y.createRelativePositionFromTypeIndex(ytext, head),
       });
     }
-  });
+  };
+
+  const cursorListener = editor.onDidChangeCursorPosition(broadcastSelection);
+  const selectionListener = editor.onDidChangeCursorSelection(broadcastSelection);
+  const focusListener = editor.onDidFocusEditorText(broadcastSelection);
 
   // Dynamic CSS injection for real-time remote user cursors with name badges
-  const styleTagId = `yjs-cursor-styles-${projectId.slice(0, 8)}-${fileId.slice(0, 8)}`;
+  const styleTagId = `yjs-cursor-styles-${projectId.replace(/[^a-zA-Z0-9]/g, '_')}-${fileId.replace(/[^a-zA-Z0-9]/g, '_')}`;
 
   const updateCursorStyles = () => {
     let css = '';
@@ -85,30 +85,51 @@ export function bindYjsToMonaco(
           background-color: ${color}33 !important;
         }
         .yRemoteSelectionHead-${clientID} {
-          position: absolute;
+          position: absolute !important;
           border-left: 2px solid ${color} !important;
           height: 100% !important;
-          box-sizing: border-box;
+          box-sizing: border-box !important;
           overflow: visible !important;
+        }
+        .yRemoteSelectionHead-${clientID}::before {
+          content: "${name}" !important;
+          position: absolute !important;
+          top: -18px !important;
+          left: -2px !important;
+          font-size: 10px !important;
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+          font-weight: 600 !important;
+          color: #ffffff !important;
+          background-color: ${color} !important;
+          padding: 1px 5px !important;
+          border-radius: 3px !important;
+          white-space: nowrap !important;
+          pointer-events: none !important;
+          user-select: none !important;
+          z-index: 1000 !important;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.5) !important;
+          line-height: 1.2 !important;
+          display: block !important;
         }
         .yRemoteSelectionHead-${clientID}::after {
           content: "${name}" !important;
-          position: absolute;
-          top: -18px;
-          left: -2px;
-          font-size: 10px;
-          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-          font-weight: 600;
+          position: absolute !important;
+          top: -18px !important;
+          left: -2px !important;
+          font-size: 10px !important;
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+          font-weight: 600 !important;
           color: #ffffff !important;
           background-color: ${color} !important;
-          padding: 1px 5px;
-          border-radius: 3px;
-          white-space: nowrap;
-          pointer-events: none;
-          user-select: none;
-          z-index: 1000;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.5);
-          line-height: 1.2;
+          padding: 1px 5px !important;
+          border-radius: 3px !important;
+          white-space: nowrap !important;
+          pointer-events: none !important;
+          user-select: none !important;
+          z-index: 1000 !important;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.5) !important;
+          line-height: 1.2 !important;
+          display: block !important;
         }
       `;
     });
@@ -123,21 +144,55 @@ export function bindYjsToMonaco(
   };
 
   provider.awareness.on('change', updateCursorStyles);
+  provider.awareness.on('update', updateCursorStyles);
   updateCursorStyles();
 
-  const binding = new MonacoBinding(
-    ytext,
-    model,
-    new Set([editor]),
-    provider.awareness
-  );
-
+  let binding: MonacoBinding | null = null;
   let destroyed = false;
+  let bound = false;
+
+  const doBind = () => {
+    if (destroyed || bound) return;
+    bound = true;
+
+    // If ytext has no text yet from server but editor has initial content, seed it
+    if (ytext.length === 0 && model.getValue().length > 0) {
+      doc.transact(() => {
+        ytext.insert(0, model.getValue());
+      });
+    }
+
+    binding = new MonacoBinding(
+      ytext,
+      model,
+      new Set([editor]),
+      provider.awareness
+    );
+
+    broadcastSelection();
+    updateCursorStyles();
+  };
+
+  if (provider.synced) {
+    doBind();
+  } else {
+    // Wait for server sync, or fallback after 250ms
+    const timer = setTimeout(() => {
+      doBind();
+    }, 250);
+
+    provider.once('sync', () => {
+      clearTimeout(timer);
+      doBind();
+    });
+  }
 
   return {
     doc,
     provider,
-    binding,
+    get binding() {
+      return binding!;
+    },
     destroy: () => {
       if (destroyed) return;
       destroyed = true;
@@ -145,14 +200,23 @@ export function bindYjsToMonaco(
         cursorListener.dispose();
       } catch {}
       try {
+        selectionListener.dispose();
+      } catch {}
+      try {
+        focusListener.dispose();
+      } catch {}
+      try {
         provider.awareness.off('change', updateCursorStyles);
+      } catch {}
+      try {
+        provider.awareness.off('update', updateCursorStyles);
       } catch {}
       try {
         const styleEl = document.getElementById(styleTagId);
         if (styleEl) styleEl.remove();
       } catch {}
       try {
-        binding.destroy();
+        if (binding) binding.destroy();
       } catch {}
       try {
         provider.disconnect();

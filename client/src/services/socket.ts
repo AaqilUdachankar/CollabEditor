@@ -38,8 +38,13 @@ export function disconnectSocket(): void {
 
 export const socketService = {
   joinProject(projectId: string, avatarColor?: string) {
-    if (socketInstance?.connected) {
+    if (!socketInstance) return;
+    if (socketInstance.connected) {
       socketInstance.emit('join:project', { projectId, avatarColor });
+    } else {
+      socketInstance.once('connect', () => {
+        socketInstance?.emit('join:project', { projectId, avatarColor });
+      });
     }
   },
 

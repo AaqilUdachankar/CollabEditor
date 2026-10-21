@@ -606,6 +606,7 @@ html, body, #root {
   box-sizing: border-box;
   overflow: visible !important;
 }
+.yRemoteSelectionHead::before,
 .yRemoteSelectionHead::after {
   position: absolute;
   top: -18px;

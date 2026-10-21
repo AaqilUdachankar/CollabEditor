@@ -121,6 +121,29 @@ export function setupYjsWebSocket(wss: WebSocketServer): void {
         }
       }
 
+      // Pre-seed document binary state from FileNode repository if not already created
+      if (parts.length === 2) {
+        const [, fileId] = parts;
+        const binPath = getDocBinaryPath(docName);
+        if (!fs.existsSync(binPath)) {
+          try {
+            const file = await FileNodeRepository.findById(fileId);
+            if (file && file.content) {
+              const seedDoc = new Y.Doc();
+              const ytext = seedDoc.getText('monaco');
+              seedDoc.transact(() => {
+                ytext.insert(0, file.content || '');
+              });
+              const state = Y.encodeStateAsUpdate(seedDoc);
+              fs.writeFileSync(binPath, Buffer.from(state));
+              seedDoc.destroy();
+            }
+          } catch (err) {
+            console.error(`[Yjs Persistence] Error pre-seeding doc ${docName}:`, err);
+          }
+        }
+      }
+
       // Hand over connection to Yjs sync protocol provider
       setupWSConnection(ws, req, { docName });
     } catch (err) {
