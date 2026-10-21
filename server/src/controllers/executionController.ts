@@ -7,7 +7,8 @@ export class ExecutionController {
     try {
       const projectId = String(req.params.projectId);
       const fileId = String(req.params.fileId);
-      const result = await ExecutionService.runFile(projectId, fileId);
+      const { content } = req.body || {};
+      const result = await ExecutionService.runFile(projectId, fileId, content);
       res.json(result);
     } catch (err: any) {
       console.error('[Run File Error]', err);

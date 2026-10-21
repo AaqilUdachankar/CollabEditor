@@ -85,7 +85,7 @@ export const ExplorerView: React.FC = () => {
     }
   };
 
-  const rootNodes = files.filter((f) => f.parentId === null);
+  const rootNodes = files.filter((f) => !f.parentId);
 
   if (!currentProject) {
     return (

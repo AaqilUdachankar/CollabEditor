@@ -9,6 +9,7 @@ interface ProjectState {
   files: IFileNode[];
   activeFileId: string | null;
   isLoadingProjects: boolean;
+  hasLoadedProjects: boolean;
   isLoadingFiles: boolean;
   sidebarWidth: number;
   activeActivity: string;
@@ -39,6 +40,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
   files: [],
   activeFileId: null,
   isLoadingProjects: false,
+  hasLoadedProjects: false,
   isLoadingFiles: false,
   sidebarWidth: 260,
   activeActivity: 'explorer',
@@ -50,14 +52,24 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
     set({ isLoadingProjects: true });
     try {
       const { projects } = await api.projects.list();
-      set({ projects, isLoadingProjects: false });
+      set({ projects, isLoadingProjects: false, hasLoadedProjects: true });
+
+      const savedProjectId = localStorage.getItem('collabide_current_project_id');
+      const matchingProject = projects.find((p) => p.id === savedProjectId);
+
+      if (matchingProject) {
+        await get().selectProject(matchingProject.id);
+      } else if (projects.length > 0 && !get().currentProject) {
+        await get().selectProject(projects[0].id);
+      }
     } catch {
-      set({ isLoadingProjects: false });
+      set({ isLoadingProjects: false, hasLoadedProjects: true });
     }
   },
 
   selectProject: async (projectId: string) => {
     try {
+      localStorage.setItem('collabide_current_project_id', projectId);
       const { project } = await api.projects.get(projectId);
       set({ currentProject: project });
       socketService.joinProject(projectId);

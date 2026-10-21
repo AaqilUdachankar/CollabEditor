@@ -25,7 +25,7 @@ export class ExecutionService {
     return safeEnv;
   }
 
-  static async runFile(projectId: string, fileId: string): Promise<ExecutionResult> {
+  static async runFile(projectId: string, fileId: string, contentOverride?: string): Promise<ExecutionResult> {
     const file = await FileNodeRepository.findById(fileId);
     if (!file || file.projectId !== projectId) {
       throw new Error('File not found in project');
@@ -38,25 +38,39 @@ export class ExecutionService {
     const fullFilePath = path.join(projectDir, file.path);
     const ext = path.extname(file.name).toLowerCase();
 
+    // Ensure target directory exists on disk
+    const dirName = path.dirname(fullFilePath);
+    if (!fs.existsSync(dirName)) {
+      fs.mkdirSync(dirName, { recursive: true });
+    }
+
+    // Flush latest code content to disk and update database record
+    const contentToRun = contentOverride !== undefined ? contentOverride : (file.content ?? '');
+    fs.writeFileSync(fullFilePath, contentToRun, 'utf-8');
+    await FileNodeRepository.update(fileId, {
+      content: contentToRun,
+      size: Buffer.byteLength(contentToRun, 'utf-8'),
+    });
+
     let cmd = '';
     let args: string[] = [];
 
     switch (ext) {
       case '.js':
       case '.mjs':
-        cmd = 'node';
-        args = [file.path];
+        cmd = process.execPath;
+        args = [fullFilePath];
         break;
       case '.py':
         cmd = 'python';
-        args = ['-u', file.path];
+        args = ['-u', fullFilePath];
         break;
       case '.cpp':
       case '.c': {
-        const outName = process.platform === 'win32' ? 'runner.exe' : './runner';
+        const outName = path.join(projectDir, process.platform === 'win32' ? 'runner.exe' : 'runner');
         const compiler = ext === '.cpp' ? 'g++' : 'gcc';
         cmd = process.platform === 'win32' ? 'cmd.exe' : 'sh';
-        const buildAndRun = `${compiler} "${file.path}" -o "${outName}" && "${outName}"`;
+        const buildAndRun = `"${compiler}" "${fullFilePath}" -o "${outName}" && "${outName}"`;
         args = process.platform === 'win32' ? ['/c', buildAndRun] : ['-c', buildAndRun];
         break;
       }
@@ -82,7 +96,7 @@ export class ExecutionService {
       const child = spawn(cmd, args, {
         cwd: projectDir,
         env: this.getSafeEnv(),
-        shell: process.platform === 'win32',
+        shell: false,
       });
 
       const procId = `${projectId}_${fileId}_${Date.now()}`;
@@ -149,8 +163,8 @@ export class ExecutionService {
     }
 
     const isWin = process.platform === 'win32';
-    const shell = isWin ? 'powershell.exe' : (process.env.SHELL || 'bash');
-    const shellArgs = isWin ? ['-NoLogo'] : [];
+    const shell = isWin ? 'cmd.exe' : (process.env.SHELL || 'bash');
+    const shellArgs = isWin ? ['/q', '/k'] : [];
 
     const proc = spawn(shell, shellArgs, {
       cwd: projectDir,
@@ -163,8 +177,17 @@ export class ExecutionService {
 
     this.activeProcesses.set(sessionId, proc);
 
+    let lineBuffer = '';
+
     proc.stdout?.on('data', (buf) => onData(buf.toString()));
     proc.stderr?.on('data', (buf) => onData(buf.toString()));
+
+    // Show initial shell prompt
+    setTimeout(() => {
+      if (!proc.killed) {
+        onData(`\r\n${projectDir}> `);
+      }
+    }, 150);
 
     proc.on('close', (code) => {
       this.activeProcesses.delete(sessionId);
@@ -177,7 +200,46 @@ export class ExecutionService {
 
     return {
       write: (data: string) => {
-        if (!proc.killed && proc.stdin?.writable) {
+        if (proc.killed || !proc.stdin?.writable) return;
+
+        if (isWin) {
+          for (let i = 0; i < data.length; i++) {
+            const char = data[i];
+            const code = char.charCodeAt(0);
+
+            if (char === '\r') {
+              onData('\r\n');
+              const toSend = lineBuffer + '\r\n';
+              lineBuffer = '';
+              proc.stdin.write(toSend);
+              if (i + 1 < data.length && data[i + 1] === '\n') {
+                i++;
+              }
+            } else if (char === '\n') {
+              onData('\r\n');
+              const toSend = lineBuffer + '\r\n';
+              lineBuffer = '';
+              proc.stdin.write(toSend);
+            } else if (code === 127 || code === 8) {
+              if (lineBuffer.length > 0) {
+                lineBuffer = lineBuffer.slice(0, -1);
+                onData('\b \b');
+              }
+            } else if (code === 3) {
+              // Ctrl+C
+              onData('^C\r\n');
+              lineBuffer = '';
+              proc.stdin.write('\x03');
+            } else if (code === 9) {
+              // Tab
+              lineBuffer += '  ';
+              onData('  ');
+            } else if (code >= 32) {
+              lineBuffer += char;
+              onData(char);
+            }
+          }
+        } else {
           proc.stdin.write(data);
         }
       },

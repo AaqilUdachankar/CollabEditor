@@ -168,10 +168,13 @@ export const api = {
 
   // Execution
   execution: {
-    runFile: (projectId: string, fileId: string) =>
+    runFile: (projectId: string, fileId: string, content?: string) =>
       request<{ stdout: string; stderr: string; exitCode: number; durationMs: number; timedOut: boolean }>(
         `/projects/${projectId}/run/${fileId}`,
-        { method: 'POST' }
+        {
+          method: 'POST',
+          body: content !== undefined ? JSON.stringify({ content }) : undefined,
+        }
       ),
 
     stopAll: (projectId: string) =>

@@ -6,7 +6,7 @@ import { useTerminalStore } from '../../stores/terminalStore.js';
 import { api } from '../../services/api.js';
 
 export const RunDebugView: React.FC = () => {
-  const { currentProject } = useProjectStore();
+  const { currentProject, saveFile } = useProjectStore();
   const { tabs, activeTabId } = useEditorStore();
   const { openPanel, addOutputLog } = useTerminalStore();
 
@@ -28,7 +28,18 @@ export const RunDebugView: React.FC = () => {
     addOutputLog(`[CollabIDE Runner] Launching ${activeTab.title} in project workspace...`, 'info');
 
     try {
-      const res = await api.execution.runFile(currentProject.id, activeTab.fileId);
+      let content: string | undefined;
+      if (typeof (window as any).__collabide_get_active_content === 'function') {
+        content = (window as any).__collabide_get_active_content();
+      }
+
+      if (typeof (window as any).__collabide_save_active === 'function') {
+        await (window as any).__collabide_save_active();
+      } else if (content !== undefined) {
+        await saveFile(activeTab.fileId, content);
+      }
+
+      const res = await api.execution.runFile(currentProject.id, activeTab.fileId, content);
       if (res.stdout) addOutputLog(res.stdout, 'info');
       if (res.stderr) addOutputLog(res.stderr, 'error');
       const msg = `Process exited with code ${res.exitCode} (${res.durationMs}ms)`;

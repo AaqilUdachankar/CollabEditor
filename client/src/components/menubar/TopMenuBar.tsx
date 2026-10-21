@@ -67,7 +67,20 @@ export const TopMenuBar: React.FC = () => {
     addOutputLog(`[Running ${activeTab.title}...]`, 'info');
 
     try {
-      const res = await api.execution.runFile(currentProject.id, activeTab.fileId);
+      // 1. Get latest content from active Monaco instance if open
+      let content: string | undefined;
+      if (typeof (window as any).__collabide_get_active_content === 'function') {
+        content = (window as any).__collabide_get_active_content();
+      }
+
+      // 2. Flush file to backend store
+      if (typeof (window as any).__collabide_save_active === 'function') {
+        await (window as any).__collabide_save_active();
+      } else if (content !== undefined) {
+        await saveFile(activeTab.fileId, content);
+      }
+
+      const res = await api.execution.runFile(currentProject.id, activeTab.fileId, content);
       if (res.stdout) addOutputLog(res.stdout, 'info');
       if (res.stderr) addOutputLog(res.stderr, 'error');
       addOutputLog(`[Process exited with code ${res.exitCode} in ${res.durationMs}ms]`, res.exitCode === 0 ? 'success' : 'error');
@@ -79,9 +92,11 @@ export const TopMenuBar: React.FC = () => {
   };
 
   const handleSaveActive = async () => {
-    // Save action
     const activeTab = tabs.find((t) => t.id === activeTabId);
     if (activeTab && currentProject) {
+      if (typeof (window as any).__collabide_save_active === 'function') {
+        await (window as any).__collabide_save_active();
+      }
       addOutputLog(`Saved ${activeTab.title}`, 'info');
     }
   };

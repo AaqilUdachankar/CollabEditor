@@ -95,10 +95,44 @@ export const MonacoInstance: React.FC<MonacoInstanceProps> = ({ isSplit = false 
       }
     });
 
-    // Content change listener for dirty indicator & auto-save
+    // Expose active editor content retrieval & save triggers for top menu & run actions
+    (window as any).__collabide_get_active_content = () => {
+      try {
+        return editor.getValue();
+      } catch {
+        return undefined;
+      }
+    };
+
+    (window as any).__collabide_save_active = async () => {
+      if (currentProject && activeTab) {
+        try {
+          const val = editor.getValue();
+          await saveFile(activeTab.fileId, val);
+          setTabDirty(activeTab.fileId, false);
+        } catch (err) {
+          console.error('[Save Active Error]', err);
+        }
+      }
+    };
+
+    // Content change listener for dirty indicator & debounced auto-save (800ms)
+    let autoSaveTimer: any = null;
     editor.onDidChangeModelContent(() => {
       if (activeTab) {
         setTabDirty(activeTab.fileId, true);
+        if (autoSaveTimer) clearTimeout(autoSaveTimer);
+        autoSaveTimer = setTimeout(async () => {
+          if (currentProject && activeTab) {
+            try {
+              const val = editor.getValue();
+              await saveFile(activeTab.fileId, val);
+              setTabDirty(activeTab.fileId, false);
+            } catch (err) {
+              console.error('[AutoSave Error]', err);
+            }
+          }
+        }, 800);
       }
     });
 

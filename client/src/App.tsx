@@ -23,6 +23,8 @@ export const App: React.FC = () => {
   const {
     currentProject,
     projects,
+    isLoadingProjects,
+    hasLoadedProjects,
     loadProjects,
     selectProject,
     createProject,
@@ -65,13 +67,17 @@ export const App: React.FC = () => {
     init();
   }, [isAuthenticated]);
 
-  // 3. Auto-select first project or prompt project creation if none exist
+  // 3. Auto-select or create ONLY IF project list has finished loading and is truly empty
   useEffect(() => {
+    if (!isAuthenticated || !hasLoadedProjects || isLoadingProjects) return;
+
     if (!currentProject) {
       if (projects.length > 0) {
-        selectProject(projects[0].id);
-      } else if (!projects.length && isAuthenticated) {
-        // Auto-create initial starter project for the user
+        const savedId = localStorage.getItem('collabide_current_project_id');
+        const match = projects.find((p) => p.id === savedId) || projects[0];
+        selectProject(match.id);
+      } else {
+        // Auto-create initial starter project ONLY if the user has 0 projects
         createProject({
           name: 'My Workspace',
           description: 'A full-stack collaborative workspace',
@@ -80,7 +86,7 @@ export const App: React.FC = () => {
         });
       }
     }
-  }, [projects.length, currentProject?.id, isAuthenticated]);
+  }, [hasLoadedProjects, isLoadingProjects, projects.length, currentProject?.id, isAuthenticated]);
 
   // 4. Bind real-time socket listeners
   useEffect(() => {
