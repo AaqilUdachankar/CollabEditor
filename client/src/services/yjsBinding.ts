@@ -36,19 +36,94 @@ export function bindYjsToMonaco(
   }
 
   // Configure remote presence & cursor awareness
-  if (user) {
-    provider.awareness.setLocalStateField('user', {
-      name: user.username,
-      color: user.avatarColor || '#38bdf8',
-      colorLight: `${user.avatarColor || '#38bdf8'}40`,
+  const userName = user?.username || 'Collaborator';
+  const userColor = user?.avatarColor || '#38bdf8';
+
+  provider.awareness.setLocalStateField('user', {
+    name: userName,
+    color: userColor,
+    colorLight: `${userColor}40`,
+  });
+
+  // Track initial cursor selection in awareness
+  const initialSel = editor.getSelection();
+  if (initialSel) {
+    const anchor = model.getOffsetAt(initialSel.getStartPosition());
+    const head = model.getOffsetAt(initialSel.getEndPosition());
+    provider.awareness.setLocalStateField('selection', {
+      anchor: Y.createRelativePositionFromTypeIndex(ytext, anchor),
+      head: Y.createRelativePositionFromTypeIndex(ytext, head),
     });
   }
 
-  let destroyed = false;
-  const onAwarenessChange = () => {
-    // remote awareness updates
+  // Track cursor movements and broadcast in real-time
+  const cursorListener = editor.onDidChangeCursorPosition(() => {
+    const sel = editor.getSelection();
+    if (sel && model) {
+      const anchor = model.getOffsetAt(sel.getStartPosition());
+      const head = model.getOffsetAt(sel.getEndPosition());
+      provider.awareness.setLocalStateField('selection', {
+        anchor: Y.createRelativePositionFromTypeIndex(ytext, anchor),
+        head: Y.createRelativePositionFromTypeIndex(ytext, head),
+      });
+    }
+  });
+
+  // Dynamic CSS injection for real-time remote user cursors with name badges
+  const styleTagId = `yjs-cursor-styles-${projectId.slice(0, 8)}-${fileId.slice(0, 8)}`;
+
+  const updateCursorStyles = () => {
+    let css = '';
+    provider.awareness.getStates().forEach((state: any, clientID: number) => {
+      if (clientID === doc.clientID || !state.user) return;
+      const u = state.user;
+      const color = u.color || '#38bdf8';
+      const name = (u.name || 'User').replace(/['"\\]/g, '');
+
+      css += `
+        .yRemoteSelection-${clientID} {
+          background-color: ${color}33 !important;
+        }
+        .yRemoteSelectionHead-${clientID} {
+          position: absolute;
+          border-left: 2px solid ${color} !important;
+          height: 100% !important;
+          box-sizing: border-box;
+          overflow: visible !important;
+        }
+        .yRemoteSelectionHead-${clientID}::after {
+          content: "${name}" !important;
+          position: absolute;
+          top: -18px;
+          left: -2px;
+          font-size: 10px;
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+          font-weight: 600;
+          color: #ffffff !important;
+          background-color: ${color} !important;
+          padding: 1px 5px;
+          border-radius: 3px;
+          white-space: nowrap;
+          pointer-events: none;
+          user-select: none;
+          z-index: 1000;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+          line-height: 1.2;
+        }
+      `;
+    });
+
+    let styleEl = document.getElementById(styleTagId);
+    if (!styleEl) {
+      styleEl = document.createElement('style');
+      styleEl.id = styleTagId;
+      document.head.appendChild(styleEl);
+    }
+    styleEl.textContent = css;
   };
-  provider.awareness.on('change', onAwarenessChange);
+
+  provider.awareness.on('change', updateCursorStyles);
+  updateCursorStyles();
 
   const binding = new MonacoBinding(
     ytext,
@@ -56,6 +131,8 @@ export function bindYjsToMonaco(
     new Set([editor]),
     provider.awareness
   );
+
+  let destroyed = false;
 
   return {
     doc,
@@ -65,7 +142,14 @@ export function bindYjsToMonaco(
       if (destroyed) return;
       destroyed = true;
       try {
-        provider.awareness.off('change', onAwarenessChange);
+        cursorListener.dispose();
+      } catch {}
+      try {
+        provider.awareness.off('change', updateCursorStyles);
+      } catch {}
+      try {
+        const styleEl = document.getElementById(styleTagId);
+        if (styleEl) styleEl.remove();
       } catch {}
       try {
         binding.destroy();

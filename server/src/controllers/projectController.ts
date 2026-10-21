@@ -19,7 +19,7 @@ export class ProjectController {
       // Attach member role to each project
       const enriched = projects.map(p => {
         const mem = memberships.find(m => m.projectId === p.id);
-        const role = p.ownerId === userId ? 'owner' : (mem?.role || 'viewer');
+        const role = p.ownerId === userId ? 'owner' : (mem?.role || (p.isPublic ? 'editor' : 'viewer'));
         return { ...p, role };
       });
 
@@ -39,7 +39,14 @@ export class ProjectController {
         return;
       }
 
-      const role = req.projectMemberRole || (project.ownerId === req.user?.id ? 'owner' : 'viewer');
+      let role = 'viewer';
+      if (project.ownerId === req.user?.id) {
+        role = 'owner';
+      } else {
+        const mem = req.user ? await ProjectMemberRepository.findMembership(projectId, req.user.id) : null;
+        role = mem?.role || req.projectMemberRole || (project.isPublic ? 'editor' : 'viewer');
+      }
+
       res.json({ project: { ...project, role } });
     } catch (err: any) {
       res.status(500).json({ error: 'Failed to retrieve project details' });

@@ -26,15 +26,35 @@ export const MonacoInstance: React.FC<MonacoInstanceProps> = ({ isSplit = false 
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
   const yjsSessionRef = useRef<YjsSession | null>(null);
 
-  // Clean up Yjs session when tab changes or unmounts
+  // Bind and maintain Yjs multiplayer CRDT & live cursor awareness
   useEffect(() => {
+    const editor = editorRef.current;
+    if (!editor || !currentProject || !activeTab) return;
+
+    if (yjsSessionRef.current) {
+      yjsSessionRef.current.destroy();
+      yjsSessionRef.current = null;
+    }
+
+    try {
+      const session = bindYjsToMonaco(
+        currentProject.id,
+        activeTab.fileId,
+        editor,
+        user
+      );
+      yjsSessionRef.current = session;
+    } catch (err) {
+      console.error('[Yjs Monaco Binding Error]', err);
+    }
+
     return () => {
       if (yjsSessionRef.current) {
         yjsSessionRef.current.destroy();
         yjsSessionRef.current = null;
       }
     };
-  }, [activeTab?.fileId]);
+  }, [currentProject?.id, activeTab?.fileId, user?.id, user?.username, user?.avatarColor]);
 
   const handleEditorMount: OnMount = (editor, monacoInstance) => {
     editorRef.current = editor;
@@ -63,25 +83,6 @@ export const MonacoInstance: React.FC<MonacoInstanceProps> = ({ isSplit = false 
     });
 
     monacoInstance.editor.setTheme(settings.theme === 'vs-dark' ? 'nexus-dark' : settings.theme);
-
-    // Bind Yjs multiplayer CRDT & remote presence
-    if (currentProject && activeTab) {
-      if (yjsSessionRef.current) {
-        yjsSessionRef.current.destroy();
-      }
-
-      try {
-        const session = bindYjsToMonaco(
-          currentProject.id,
-          activeTab.fileId,
-          editor,
-          user
-        );
-        yjsSessionRef.current = session;
-      } catch (err) {
-        console.error('[Yjs Monaco Binding Error]', err);
-      }
-    }
 
     // Track cursor and selection changes to broadcast to room
     editor.onDidChangeCursorPosition((e) => {
@@ -157,7 +158,7 @@ export const MonacoInstance: React.FC<MonacoInstanceProps> = ({ isSplit = false 
     );
   };
 
-  const isReadOnly = currentProject?.role === 'viewer';
+  const isReadOnly = currentProject?.role === 'viewer' && !currentProject?.isPublic;
 
   if (!activeTab || !activeFile) {
     return (

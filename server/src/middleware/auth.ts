@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
+import { v4 as uuidv4 } from 'uuid';
 import { config } from '../config/index.js';
 import { ProjectMemberRepository, ProjectRole } from '../models/ProjectMember.js';
 import { ProjectRepository } from '../models/Project.js';
@@ -92,14 +93,18 @@ export function requireProjectRole(minRole: ProjectRole = 'viewer') {
       return;
     }
 
-    const membership = await ProjectMemberRepository.findMembership(projectId, req.user.id);
+    let membership = await ProjectMemberRepository.findMembership(projectId, req.user.id);
+    if (!membership && project.isPublic) {
+      membership = await ProjectMemberRepository.addMember({
+        id: uuidv4(),
+        projectId,
+        userId: req.user.id,
+        role: 'editor',
+        joinedAt: new Date().toISOString(),
+      });
+    }
+
     if (!membership) {
-      // If project is public and only viewer is needed
-      if (project.isPublic && minRole === 'viewer') {
-        req.projectMemberRole = 'viewer';
-        next();
-        return;
-      }
       res.status(403).json({ error: 'Access denied: You are not a member of this project' });
       return;
     }
