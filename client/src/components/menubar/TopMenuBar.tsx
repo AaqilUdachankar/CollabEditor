@@ -25,7 +25,7 @@ import { api } from '../../services/api.js';
 
 export const TopMenuBar: React.FC = () => {
   const { user, isAuthenticated, logout } = useAuthStore();
-  const { currentProject, projects, selectProject, saveFile } = useProjectStore();
+  const { currentProject, projects, selectProject, saveFile, setActiveActivity } = useProjectStore();
   const { tabs, activeTabId, setSplitMode, splitMode } = useEditorStore();
   const { togglePanel, openPanel, addOutputLog } = useTerminalStore();
   const {
@@ -158,7 +158,7 @@ export const TopMenuBar: React.FC = () => {
                   <span>Command Palette...</span>
                   <span className="menu-shortcut">Ctrl+Shift+P</span>
                 </div>
-                <div className="menu-dropdown-item" onClick={() => { setQuickOpenOpen(true); setActiveMenu(null); }}>
+                <div className="menu-dropdown-item" onClick={() => { setActiveActivity('search'); setActiveMenu(null); }}>
                   <span>Find in Files</span>
                   <span className="menu-shortcut">Ctrl+Shift+F</span>
                 </div>

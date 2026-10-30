@@ -12,6 +12,9 @@ export interface SearchResult {
   lineContent: string;
   matchStart: number;
   matchEnd: number;
+  colStart?: number;
+  colEnd?: number;
+  matchType?: 'content' | 'filename';
 }
 
 export class FileService {
@@ -215,12 +218,75 @@ export class FileService {
   static async searchAcrossFiles(
     projectId: string,
     query: string,
-    options: { matchCase?: boolean; wholeWord?: boolean; isRegex?: boolean } = {}
+    options: {
+      matchCase?: boolean;
+      wholeWord?: boolean;
+      isRegex?: boolean;
+      limit?: number;
+    } = {}
   ): Promise<SearchResult[]> {
-    if (!query) return [];
+    if (!query || typeof query !== 'string') return [];
 
+    const projectRoot = path.resolve(ProjectService.getProjectPath(projectId));
     const files = await FileNodeRepository.findByProject(projectId);
     const results: SearchResult[] = [];
+    const limit = options.limit ? Math.min(Math.max(1, options.limit), 500) : 200;
+
+    const EXCLUDED_DIRS = new Set([
+      'node_modules',
+      '.git',
+      'dist',
+      'build',
+      'coverage',
+      '.gemini',
+      '.next',
+      '.cache',
+      'out',
+    ]);
+
+    const BINARY_EXTENSIONS = new Set([
+      '.png',
+      '.jpg',
+      '.jpeg',
+      '.gif',
+      '.ico',
+      '.webp',
+      '.bmp',
+      '.tiff',
+      '.svg',
+      '.pdf',
+      '.zip',
+      '.tar',
+      '.gz',
+      '.tgz',
+      '.rar',
+      '.7z',
+      '.exe',
+      '.dll',
+      '.so',
+      '.dylib',
+      '.bin',
+      '.iso',
+      '.dmg',
+      '.mp3',
+      '.mp4',
+      '.mov',
+      '.wav',
+      '.avi',
+      '.flac',
+      '.ogg',
+      '.woff',
+      '.woff2',
+      '.ttf',
+      '.eot',
+      '.otf',
+      '.pyc',
+      '.pyo',
+      '.pyd',
+      '.class',
+      '.jar',
+      '.war',
+    ]);
 
     let regex: RegExp;
     try {
@@ -232,24 +298,87 @@ export class FileService {
     }
 
     for (const file of files) {
-      if (file.type !== 'file' || !file.content) continue;
+      if (file.type !== 'file') continue;
 
-      const lines = file.content.split('\n');
+      // Prevent path traversal
+      if (file.path.includes('..')) continue;
+      const fullDiskPath = path.resolve(projectRoot, file.path);
+      if (!fullDiskPath.startsWith(projectRoot)) continue;
+
+      // Exclude standard build/dep directories
+      const segments = file.path.split(/[/\\]/);
+      if (segments.some((seg) => EXCLUDED_DIRS.has(seg))) continue;
+
+      // Exclude binary files
+      const ext = path.extname(file.name).toLowerCase();
+      if (BINARY_EXTENSIONS.has(ext)) continue;
+
+      // 1. Search file name & relative path
+      regex.lastIndex = 0;
+      const fileNameMatch = regex.exec(file.name);
+      if (fileNameMatch) {
+        results.push({
+          fileId: file.id,
+          filePath: file.path,
+          fileName: file.name,
+          lineNumber: 1,
+          lineContent: file.path,
+          matchStart: fileNameMatch.index,
+          matchEnd: fileNameMatch.index + fileNameMatch[0].length,
+          matchType: 'filename',
+        });
+
+        if (results.length >= limit) {
+          return results;
+        }
+      }
+
+      // 2. Search file content
+      let content = file.content;
+      if (content === undefined || content === null) {
+        if (fs.existsSync(fullDiskPath)) {
+          try {
+            content = fs.readFileSync(fullDiskPath, 'utf-8');
+          } catch {
+            content = '';
+          }
+        } else {
+          content = '';
+        }
+      }
+
+      if (!content) continue;
+
+      const lines = content.split(/\r?\n/);
       for (let i = 0; i < lines.length; i++) {
         const line = lines[i];
-        let match: RegExpExecArray | null;
         regex.lastIndex = 0;
+        let match: RegExpExecArray | null;
+
+        const leadingSpaces = line.length - line.trimStart().length;
+        const trimmed = line.trim();
 
         while ((match = regex.exec(line)) !== null) {
+          const matchLen = match[0].length;
+          const previewStart = Math.max(0, match.index - leadingSpaces);
+          const previewEnd = Math.min(trimmed.length, previewStart + matchLen);
+
           results.push({
             fileId: file.id,
             filePath: file.path,
             fileName: file.name,
             lineNumber: i + 1,
-            lineContent: line.trim(),
-            matchStart: match.index,
-            matchEnd: match.index + match[0].length,
+            lineContent: trimmed,
+            matchStart: previewStart,
+            matchEnd: previewEnd,
+            colStart: match.index + 1,
+            colEnd: match.index + matchLen + 1,
+            matchType: 'content',
           });
+
+          if (results.length >= limit) {
+            return results;
+          }
 
           // Prevent zero-length regex infinite loops
           if (match.index === regex.lastIndex) regex.lastIndex++;

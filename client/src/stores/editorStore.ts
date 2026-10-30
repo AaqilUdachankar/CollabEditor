@@ -18,6 +18,24 @@ interface EditorState {
   openInSplit: (file: IFileNode) => void;
   closeSplitTab: (tabId: string) => void;
   setActiveSplitTab: (tabId: string) => void;
+  targetLocation: {
+    fileId: string;
+    lineNumber: number;
+    matchStart?: number;
+    matchEnd?: number;
+    colStart?: number;
+    colEnd?: number;
+    nonce: number;
+  } | null;
+  navigateToLocation: (
+    file: IFileNode,
+    lineNumber: number,
+    matchStart?: number,
+    matchEnd?: number,
+    colStart?: number,
+    colEnd?: number
+  ) => void;
+  clearTargetLocation: () => void;
 }
 
 export const useEditorStore = create<EditorState>((set, get) => ({
@@ -26,6 +44,31 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   splitMode: 'none',
   splitTabs: [],
   activeSplitTabId: null,
+  targetLocation: null,
+
+  navigateToLocation: (
+    file: IFileNode,
+    lineNumber: number,
+    matchStart?: number,
+    matchEnd?: number,
+    colStart?: number,
+    colEnd?: number
+  ) => {
+    get().openTab(file);
+    set({
+      targetLocation: {
+        fileId: file.id,
+        lineNumber,
+        matchStart,
+        matchEnd,
+        colStart,
+        colEnd,
+        nonce: Date.now(),
+      },
+    });
+  },
+
+  clearTargetLocation: () => set({ targetLocation: null }),
 
   openTab: (file: IFileNode) => {
     if (file.type !== 'file') return;

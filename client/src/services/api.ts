@@ -1,4 +1,4 @@
-import { IUser, IProject, IFileNode, IGitStatus, IGitCommit, IFileVersion } from '../types/ide.js';
+import { IUser, IProject, IFileNode, IGitStatus, IGitCommit, IFileVersion, ISearchResult } from '../types/ide.js';
 
 const API_BASE = '/api';
 
@@ -88,14 +88,21 @@ export const api = {
     duplicateNode: (projectId: string, nodeId: string) =>
       request<{ file: IFileNode }>(`/projects/${projectId}/nodes/${nodeId}/duplicate`, { method: 'POST' }),
 
-    search: (projectId: string, query: string, opts: { matchCase?: boolean; wholeWord?: boolean; isRegex?: boolean } = {}) => {
+    search: (
+      projectId: string,
+      query: string,
+      opts: { matchCase?: boolean; wholeWord?: boolean; isRegex?: boolean; limit?: number } = {}
+    ) => {
       const params = new URLSearchParams({
         q: query,
         matchCase: String(opts.matchCase || false),
         wholeWord: String(opts.wholeWord || false),
         isRegex: String(opts.isRegex || false),
       });
-      return request<{ results: any[] }>(`/projects/${projectId}/search?${params.toString()}`);
+      if (opts.limit) params.set('limit', String(opts.limit));
+      return request<{ results: ISearchResult[]; totalMatches?: number; hasMore?: boolean }>(
+        `/projects/${projectId}/search?${params.toString()}`
+      );
     },
   },
 

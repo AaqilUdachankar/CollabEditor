@@ -104,3 +104,17 @@ export interface IFileVersion {
   summary?: string;
   createdAt: string;
 }
+
+export interface ISearchResult {
+  fileId: string;
+  filePath: string;
+  fileName: string;
+  lineNumber: number;
+  lineContent: string;
+  matchStart: number;
+  matchEnd: number;
+  colStart?: number;
+  colEnd?: number;
+  matchType?: 'content' | 'filename';
+}
+
