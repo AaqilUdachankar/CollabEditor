@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth.js';
 import { FileService } from '../services/fileService.js';
+import { HistoryService } from '../services/historyService.js';
 import { getSocketIO } from '../sockets/index.js';
 
 export class FileController {
@@ -26,6 +27,20 @@ export class FileController {
       }
 
       const file = await FileService.createFile(projectId, parentId || null, name, content || '');
+
+      // Create initial version snapshot
+      try {
+        await HistoryService.createSnapshot(
+          projectId,
+          file.id,
+          content || '',
+          req.user || { id: 'system', username: 'Creator' },
+          'Initial version',
+          true
+        );
+      } catch (err) {
+        // do not block file creation if snapshot fails
+      }
 
       // Broadcast file tree change to room peers
       const io = getSocketIO();
@@ -74,6 +89,19 @@ export class FileController {
       }
 
       const updated = await FileService.saveFileContent(projectId, fileId, content);
+
+      // Create debounced snapshot
+      try {
+        await HistoryService.createSnapshot(
+          projectId,
+          fileId,
+          content,
+          req.user || { id: 'user', username: 'Collaborator' },
+          'Saved version'
+        );
+      } catch (err) {
+        // do not block file save if snapshot fails
+      }
 
       const io = getSocketIO();
       if (io) {

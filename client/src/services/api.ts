@@ -1,4 +1,4 @@
-import { IUser, IProject, IFileNode, IGitStatus, IGitCommit } from '../types/ide.js';
+import { IUser, IProject, IFileNode, IGitStatus, IGitCommit, IFileVersion } from '../types/ide.js';
 
 const API_BASE = '/api';
 
@@ -97,6 +97,47 @@ export const api = {
       });
       return request<{ results: any[] }>(`/projects/${projectId}/search?${params.toString()}`);
     },
+  },
+
+  // History & Diff
+  history: {
+    list: (projectId: string, fileId: string, limit: number = 30, skip: number = 0) =>
+      request<{ versions: IFileVersion[]; total: number }>(
+        `/projects/${projectId}/files/${fileId}/history?limit=${limit}&skip=${skip}`
+      ),
+
+    get: (projectId: string, fileId: string, versionId: string) =>
+      request<{ version: IFileVersion }>(`/projects/${projectId}/files/${fileId}/history/${versionId}`),
+
+    diff: (projectId: string, fileId: string, v1?: string, v2?: string) => {
+      const params = new URLSearchParams();
+      if (v1) params.set('v1', v1);
+      if (v2) params.set('v2', v2);
+      return request<{
+        v1: { label: string; versionNumber?: number; createdAt?: string };
+        v2: { label: string; versionNumber?: number; createdAt?: string };
+        diff: {
+          addedCount: number;
+          removedCount: number;
+          unchangedCount: number;
+          lines: Array<{ type: 'added' | 'removed' | 'unchanged'; content: string; oldLineNumber?: number; newLineNumber?: number }>;
+        };
+        originalContent: string;
+        modifiedContent: string;
+      }>(`/projects/${projectId}/files/${fileId}/diff?${params.toString()}`);
+    },
+
+    createSnapshot: (projectId: string, fileId: string, summary?: string, content?: string) =>
+      request<{ version: IFileVersion }>(`/projects/${projectId}/files/${fileId}/history/snapshot`, {
+        method: 'POST',
+        body: JSON.stringify({ summary, content }),
+      }),
+
+    restore: (projectId: string, fileId: string, versionId: string) =>
+      request<{ message: string; file: IFileNode; newVersion: IFileVersion }>(
+        `/projects/${projectId}/files/${fileId}/restore/${versionId}`,
+        { method: 'POST' }
+      ),
   },
 
   // Collaboration
