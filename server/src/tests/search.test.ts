@@ -50,13 +50,13 @@ async function runSearchTestSuite() {
     updatedAt: new Date().toISOString(),
   });
 
-  const project = await ProjectService.createProject({
-    name: 'Search Test Workspace',
-    description: 'Testing project-wide file search capabilities',
-    ownerId: owner.id,
-    template: 'empty',
-    isPublic: false,
-  });
+  const project = await ProjectService.createProject(
+    owner.id,
+    'Search Test Workspace',
+    'Testing project-wide file search capabilities',
+    'empty',
+    false
+  );
   const projectId = project.id;
 
   // 1. Setup Nested Folders and Test Files
@@ -97,7 +97,7 @@ async function runSearchTestSuite() {
     `// Special characters test: [test-brackets], func(arg), price$100, item.name, a+b*c\nconst regexChars = "[test-brackets]";\nconst fnCall = "func(arg)";\nconst dollar = "$100";\n`
   );
 
-  assert(headerFile && mathFile && deepFile && specialFile, 'Nested directories and test files created successfully');
+  assert(Boolean(headerFile && mathFile && deepFile && specialFile), 'Nested directories and test files created successfully');
 
   // 2. Test File Name & Relative Path Search
   console.log('\n📦 2. Testing File Name & Relative Path Search...');
