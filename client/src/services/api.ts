@@ -200,8 +200,11 @@ export const api = {
         body: JSON.stringify({ message }),
       }),
 
-    getDiff: (projectId: string, file?: string) => {
-      const q = file ? `?file=${encodeURIComponent(file)}` : '';
+    getDiff: (projectId: string, file?: string, staged: boolean = false) => {
+      const params = new URLSearchParams();
+      if (file) params.set('file', file);
+      if (staged) params.set('staged', 'true');
+      const q = params.toString() ? `?${params.toString()}` : '';
       return request<{ diff: string }>(`/projects/${projectId}/git/diff${q}`);
     },
 

@@ -10,6 +10,7 @@
     "test": "tsx src/tests/runAllTests.ts",
     "test:history": "tsx src/tests/history.test.ts",
     "test:search": "tsx src/tests/search.test.ts",
+    "test:git": "tsx src/tests/git.test.ts",
     "test:terminal": "tsx src/tests/terminal.test.ts",
     "test:collab": "tsx src/tests/multiplayerCollaboration.test.ts"
   },

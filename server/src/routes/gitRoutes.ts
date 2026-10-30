@@ -7,6 +7,7 @@ const router = Router({ mergeParams: true });
 router.use(authMiddleware);
 
 router.get('/:projectId/git/status', requireProjectRole('viewer'), GitController.getStatus);
+router.get('/:projectId/git/available', requireProjectRole('viewer'), GitController.checkAvailable);
 router.post('/:projectId/git/init', requireProjectRole('editor'), GitController.initRepo);
 router.post('/:projectId/git/stage', requireProjectRole('editor'), GitController.stageFile);
 router.post('/:projectId/git/unstage', requireProjectRole('editor'), GitController.unstageFile);
