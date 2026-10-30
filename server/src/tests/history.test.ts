@@ -140,7 +140,7 @@ async function runHistoryTestSuite() {
     debouncedContent1,
     { id: editor.id, username: editor.username },
     'Rapid edit 1',
-    false
+    true
   );
 
   // Immediate second edit by same author
