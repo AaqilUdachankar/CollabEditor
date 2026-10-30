@@ -225,8 +225,9 @@ export class FileService {
       limit?: number;
     } = {}
   ): Promise<SearchResult[]> {
-    if (!query || typeof query !== 'string') return [];
+    if (!query || typeof query !== 'string' || !query.trim()) return [];
 
+    const cleanQuery = query.trim();
     const projectRoot = path.resolve(ProjectService.getProjectPath(projectId));
     const files = await FileNodeRepository.findByProject(projectId);
     const results: SearchResult[] = [];
@@ -290,7 +291,7 @@ export class FileService {
 
     let regex: RegExp;
     try {
-      let pattern = options.isRegex ? query : query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      let pattern = options.isRegex ? cleanQuery : cleanQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       if (options.wholeWord) pattern = `\\b${pattern}\\b`;
       regex = new RegExp(pattern, options.matchCase ? 'g' : 'gi');
     } catch {

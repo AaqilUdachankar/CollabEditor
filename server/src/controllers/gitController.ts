@@ -14,6 +14,15 @@ export class GitController {
     }
   }
 
+  static async checkAvailable(_req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const result = await GitService.checkGitAvailable();
+      res.json(result);
+    } catch (err: any) {
+      res.status(500).json({ available: false, error: err.message });
+    }
+  }
+
   static async initRepo(req: AuthRequest, res: Response): Promise<void> {
     try {
       const projectId = String(req.params.projectId);
@@ -35,7 +44,7 @@ export class GitController {
       await GitService.stageFile(projectId, filePath);
       res.json({ message: `Staged ${filePath}` });
     } catch (err: any) {
-      res.status(500).json({ error: err.message || 'Failed to stage file' });
+      res.status(400).json({ error: err.message || 'Failed to stage file' });
     }
   }
 
@@ -50,7 +59,7 @@ export class GitController {
       await GitService.unstageFile(projectId, filePath);
       res.json({ message: `Unstaged ${filePath}` });
     } catch (err: any) {
-      res.status(500).json({ error: err.message || 'Failed to unstage file' });
+      res.status(400).json({ error: err.message || 'Failed to unstage file' });
     }
   }
 
@@ -58,12 +67,17 @@ export class GitController {
     try {
       const projectId = String(req.params.projectId);
       const { message } = req.body;
-      if (!message || !message.trim()) {
+      if (!message || typeof message !== 'string' || !message.trim()) {
         res.status(400).json({ error: 'Commit message is required' });
         return;
       }
 
-      const output = await GitService.commit(projectId, message.trim(), req.user?.username);
+      const output = await GitService.commit(
+        projectId,
+        message.trim(),
+        req.user?.username,
+        req.user?.email
+      );
       res.json({ message: 'Commit successful', output });
     } catch (err: any) {
       res.status(400).json({ error: err.message || 'Failed to commit changes' });
@@ -73,8 +87,12 @@ export class GitController {
   static async getDiff(req: AuthRequest, res: Response): Promise<void> {
     try {
       const projectId = String(req.params.projectId);
-      const { file } = req.query;
-      const diff = await GitService.getDiff(projectId, typeof file === 'string' ? file : undefined);
+      const { file, staged } = req.query;
+      const diff = await GitService.getDiff(
+        projectId,
+        typeof file === 'string' ? file : undefined,
+        staged === 'true'
+      );
       res.json({ diff });
     } catch (err: any) {
       res.status(500).json({ error: err.message || 'Failed to get git diff' });
@@ -102,7 +120,7 @@ export class GitController {
       await GitService.createBranch(projectId, branchName);
       res.json({ message: `Switched to branch ${branchName}` });
     } catch (err: any) {
-      res.status(500).json({ error: err.message || 'Failed to create branch' });
+      res.status(400).json({ error: err.message || 'Failed to create branch' });
     }
   }
 }

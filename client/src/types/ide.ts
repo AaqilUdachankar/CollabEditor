@@ -67,8 +67,11 @@ export interface IGitFile {
 }
 
 export interface IGitStatus {
+  isRepo?: boolean;
+  gitAvailable?: boolean;
   branch: string;
   files: IGitFile[];
+  error?: string;
 }
 
 export interface IGitCommit {
