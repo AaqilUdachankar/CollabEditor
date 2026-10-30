@@ -76,12 +76,6 @@ export function setupTerminalWebSocket(wss: WebSocketServer): void {
         }
       );
 
-      // Send initial welcome banner
-      ws.send(JSON.stringify({
-        type: 'output',
-        data: `\r\n\x1b[1;34m⚡ CollabIDE Terminal Session Initialized\x1b[0m\r\n\x1b[90mWorkspace: ${project.name} (${project.id})\x1b[0m\r\n\r\n`
-      }));
-
       ws.on('message', (message: any) => {
         try {
           const str = message.toString();
@@ -98,9 +92,11 @@ export function setupTerminalWebSocket(wss: WebSocketServer): void {
             terminal.write(parsed.data);
           } else if (parsed.type === 'resize' && parsed.cols && parsed.rows) {
             terminal.resize(parsed.cols, parsed.rows);
+          } else if (parsed.type === 'restart') {
+            terminal.restart();
           }
-        } catch (err) {
-          console.error('[Terminal Message Error]', err);
+        } catch {
+          // Do not log user inputs or secrets in application logs
         }
       });
 
