@@ -4,6 +4,7 @@ import { EditorTabs } from './EditorTabs.js';
 import { Breadcrumbs } from './Breadcrumbs.js';
 import { MonacoInstance } from './MonacoInstance.js';
 import { DiffEditorModal } from './DiffEditorModal.js';
+import { FileHistoryModal } from '../history/FileHistoryModal.js';
 
 export const EditorWorkbench: React.FC = () => {
   const { splitMode } = useEditorStore();
@@ -14,6 +15,7 @@ export const EditorWorkbench: React.FC = () => {
   return (
     <div className="nexus-editor-area">
       <DiffEditorModal />
+      <FileHistoryModal />
 
       {isSplit ? (
         <div

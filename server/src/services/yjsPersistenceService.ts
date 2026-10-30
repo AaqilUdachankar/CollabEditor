@@ -4,6 +4,7 @@ import * as Y from 'yjs';
 import { config } from '../config/index.js';
 import { FileNodeRepository } from '../models/FileNode.js';
 import { FileService } from './fileService.js';
+import { HistoryService } from './historyService.js';
 
 export class YjsPersistenceService {
   private static yjsDir = path.join(process.cwd(), './data/yjs');
@@ -90,6 +91,17 @@ export class YjsPersistenceService {
           const [projectId, fileId] = parts;
           const text = doc.getText('monaco').toString();
           await FileService.saveFileContent(projectId, fileId, text);
+          try {
+            await HistoryService.createSnapshot(
+              projectId,
+              fileId,
+              text,
+              { id: 'collaborative', username: 'Collaborative Edit' },
+              'Collaborative autosave'
+            );
+          } catch {
+            // do not fail Yjs sync
+          }
         }
       } catch (err) {
         console.error(`[Yjs] Error persisting update for ${docName}:`, err);

@@ -8,6 +8,7 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "test": "tsx src/tests/runAllTests.ts",
+    "test:history": "tsx src/tests/history.test.ts",
     "test:terminal": "tsx src/tests/terminal.test.ts",
     "test:collab": "tsx src/tests/multiplayerCollaboration.test.ts"
   },

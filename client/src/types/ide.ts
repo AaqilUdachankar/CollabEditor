@@ -90,3 +90,17 @@ export interface ISettings {
   minimap: boolean;
   autoSave: boolean;
 }
+
+export interface IFileVersion {
+  id: string;
+  projectId: string;
+  fileId: string;
+  versionNumber: number;
+  content: string;
+  size: number;
+  authorId: string;
+  authorName: string;
+  authorEmail?: string;
+  summary?: string;
+  createdAt: string;
+}
