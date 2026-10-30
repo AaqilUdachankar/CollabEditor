@@ -8,12 +8,14 @@ export interface TerminalInstance {
   destroy: () => void;
   sendInput: (data: string) => void;
   clear: () => void;
+  restart: () => void;
 }
 
 export function createTerminalSession(
   container: HTMLElement,
   projectId: string,
-  _onTitleChange?: (title: string) => void
+  onExit?: (code: number) => void,
+  onStatusChange?: (status: 'connected' | 'disconnected' | 'connecting') => void
 ): TerminalInstance {
   let isDestroyed = false;
 
@@ -81,6 +83,7 @@ export function createTerminalSession(
       return;
     }
     safeFit();
+    onStatusChange?.('connected');
     if (ws && ws.readyState === WebSocket.OPEN) {
       ws.send(JSON.stringify({ type: 'resize', cols: term.cols || 80, rows: term.rows || 24 }));
     }
@@ -95,6 +98,7 @@ export function createTerminalSession(
       } else if (msg.type === 'error') {
         term.writeln(`\r\n\x1b[31m${msg.message}\x1b[0m\r\n`);
       } else if (msg.type === 'exit') {
+        onExit?.(msg.code);
         term.writeln(`\r\n\x1b[90m[Process exited with code ${msg.code}]\x1b[0m\r\n`);
       }
     } catch {
@@ -104,13 +108,15 @@ export function createTerminalSession(
 
   ws.onerror = () => {
     if (!isDestroyed) {
+      onStatusChange?.('disconnected');
       term.writeln('\r\n\x1b[31mFailed to connect to terminal session\x1b[0m\r\n');
     }
   };
 
   ws.onclose = () => {
     if (!isDestroyed) {
-      term.writeln('\r\n\x1b[90mTerminal session closed\x1b[0m\r\n');
+      onStatusChange?.('disconnected');
+      term.writeln('\r\n\x1b[90mTerminal session disconnected\x1b[0m\r\n');
     }
   };
 
@@ -165,6 +171,14 @@ export function createTerminalSession(
     },
     clear: () => {
       term.clear();
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ type: 'input', data: '\x0c' }));
+      }
+    },
+    restart: () => {
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ type: 'restart' }));
+      }
     },
   };
 }
