@@ -122,10 +122,16 @@ export const BottomPanel: React.FC = () => {
       </div>
 
       {/* Panel Tab Content */}
-      <div className="panel-content">
-        {activeTab === 'terminal' && <TerminalTab />}
-        {activeTab === 'output' && <OutputTab />}
-        {activeTab === 'problems' && <ProblemsTab />}
+      <div className="panel-content" style={{ width: '100%', height: 'calc(100% - 35px)', position: 'relative' }}>
+        <div style={{ width: '100%', height: '100%', display: activeTab === 'terminal' ? 'block' : 'none' }}>
+          <TerminalTab />
+        </div>
+        <div style={{ width: '100%', height: '100%', display: activeTab === 'output' ? 'block' : 'none' }}>
+          <OutputTab />
+        </div>
+        <div style={{ width: '100%', height: '100%', display: activeTab === 'problems' ? 'block' : 'none' }}>
+          <ProblemsTab />
+        </div>
       </div>
     </div>
   );

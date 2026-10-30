@@ -1,4 +1,4 @@
-import { spawn, ChildProcess } from 'child_process';
+import { spawn, spawnSync, ChildProcess } from 'child_process';
 import path from 'path';
 import fs from 'fs';
 import { ProjectService } from './projectService.js';
@@ -18,10 +18,16 @@ export class ExecutionService {
   private static activeProcesses: Map<string, ChildProcess> = new Map();
 
   static getSafeEnv(): NodeJS.ProcessEnv {
-    // Copy all system environment variables, omitting sensitive secrets
+    // Copy all system environment variables, omitting sensitive secrets and credentials
     const safeEnv = { ...process.env };
-    delete safeEnv.JWT_SECRET;
-    delete safeEnv.MONGODB_URI;
+    const sensitivePattern = /(jwt|token|secret|pass|mongo|database|auth|cred|api_key)/i;
+    for (const key of Object.keys(safeEnv)) {
+      if (sensitivePattern.test(key)) {
+        delete safeEnv[key];
+      }
+    }
+    safeEnv.TERM = 'xterm-256color';
+    safeEnv.COLORTERM = 'truecolor';
     return safeEnv;
   }
 
@@ -189,6 +195,45 @@ export class ExecutionService {
     });
   }
 
+  static checkEnvironmentCapabilities(projectDir: string) {
+    let gitAvailable = false;
+    let npmAvailable = false;
+    let fsWritable = false;
+
+    try {
+      const gitRes = spawnSync('git', ['--version'], { stdio: 'pipe' });
+      gitAvailable = gitRes.status === 0;
+    } catch {
+      gitAvailable = false;
+    }
+
+    try {
+      const npmCmd = process.platform === 'win32' ? 'npm.cmd' : 'npm';
+      const npmRes = spawnSync(npmCmd, ['--version'], { stdio: 'pipe' });
+      npmAvailable = npmRes.status === 0;
+    } catch {
+      npmAvailable = false;
+    }
+
+    try {
+      const testFile = path.join(projectDir, `.collabide_test_${Date.now()}`);
+      fs.writeFileSync(testFile, 'ok', 'utf-8');
+      fs.unlinkSync(testFile);
+      fsWritable = true;
+    } catch {
+      fsWritable = false;
+    }
+
+    return {
+      ptySupported: false,
+      persistentShell: true,
+      gitAvailable,
+      npmAvailable,
+      fsWritable,
+      mode: 'emulated' as const,
+    };
+  }
+
   static spawnTerminal(
     sessionId: string,
     projectId: string,
@@ -197,107 +242,432 @@ export class ExecutionService {
   ): {
     write: (data: string) => void;
     resize: (cols: number, rows: number) => void;
+    restart: () => void;
     kill: () => void;
   } {
-    const projectDir = ProjectService.getProjectPath(projectId);
+    const projectDir = path.resolve(ProjectService.getProjectPath(projectId));
     if (!fs.existsSync(projectDir)) {
       fs.mkdirSync(projectDir, { recursive: true });
     }
 
-    const isWin = process.platform === 'win32';
-    const shell = isWin ? 'cmd.exe' : (process.env.SHELL || 'bash');
-    const shellArgs = isWin ? ['/q', '/k'] : [];
+    const caps = this.checkEnvironmentCapabilities(projectDir);
 
-    const proc = spawn(shell, shellArgs, {
-      cwd: projectDir,
-      env: {
-        ...this.getSafeEnv(),
-        TERM: 'xterm-256color',
-        COLORTERM: 'truecolor',
-      },
-    });
-
-    this.activeProcesses.set(sessionId, proc);
-
+    let currentCwd = projectDir;
     let lineBuffer = '';
+    const history: string[] = [];
+    let historyIndex = 0;
+    let currentChild: ChildProcess | null = null;
+    let currentCommandTimer: NodeJS.Timeout | null = null;
+    let isTerminated = false;
+    let cols = 80;
+    let rows = 24;
 
-    proc.stdout?.on('data', (buf) => onData(buf.toString()));
-    proc.stderr?.on('data', (buf) => onData(buf.toString()));
+    const getPrompt = () => {
+      const rel = path.relative(projectDir, currentCwd).replace(/\\/g, '/');
+      const display = rel ? `~/${rel}` : '~';
+      return `\x1b[1;32mcollabide\x1b[0m:\x1b[1;34m${display}\x1b[0m$ `;
+    };
 
-    // Show initial shell prompt
-    setTimeout(() => {
-      if (!proc.killed) {
-        onData(`\r\n${projectDir}> `);
+    const printPrompt = () => {
+      if (!isTerminated) {
+        onData(getPrompt());
       }
-    }, 150);
+    };
 
-    proc.on('close', (code) => {
-      this.activeProcesses.delete(sessionId);
-      onExit(code ?? 0);
-    });
+    const sendBanner = () => {
+      const gitText = caps.gitAvailable ? '\x1b[32mActive\x1b[0m' : '\x1b[33mNot in PATH\x1b[0m';
+      const npmText = caps.npmAvailable ? '\x1b[32mActive\x1b[0m' : '\x1b[33mNot in PATH\x1b[0m';
+      const ptyText = '\x1b[36mEmulated (Sandbox Isolation)\x1b[0m';
+      const fsText = caps.fsWritable ? '\x1b[32mWritable\x1b[0m' : '\x1b[31mRead-Only\x1b[0m';
 
-    proc.on('error', (err) => {
-      onData(`\r\n\x1b[31mTerminal session error: ${err.message}\x1b[0m\r\n`);
-    });
+      onData(
+        `\r\n\x1b[1;34m⚡ CollabIDE Interactive Terminal Session\x1b[0m\r\n` +
+        `\x1b[90mCaps: [PTY: ${ptyText}\x1b[90m] [Git: ${gitText}\x1b[90m] [NPM: ${npmText}\x1b[90m] [FS: ${fsText}\x1b[90m]\x1b[0m\r\n` +
+        `\x1b[90mWorkspace Root: ${projectDir}\x1b[0m\r\n` +
+        `\x1b[90mType "help" for built-in commands or run project scripts.\x1b[0m\r\n\r\n`
+      );
+      printPrompt();
+    };
+
+    const killActiveProcess = () => {
+      if (currentCommandTimer) {
+        clearTimeout(currentCommandTimer);
+        currentCommandTimer = null;
+      }
+      if (currentChild && !currentChild.killed) {
+        try {
+          if (process.platform === 'win32' && currentChild.pid) {
+            spawnSync('taskkill', ['/pid', String(currentChild.pid), '/T', '/F'], { stdio: 'ignore' });
+          } else {
+            currentChild.kill('SIGINT');
+          }
+        } catch {
+          // ignore
+        }
+        currentChild = null;
+      }
+      ExecutionService.activeProcesses.delete(`${sessionId}_cmd`);
+    };
+
+    const formatDirectoryListing = (dirPath: string, longFormat: boolean): string => {
+      try {
+        const entries = fs.readdirSync(dirPath, { withFileTypes: true });
+        if (entries.length === 0) {
+          return '\x1b[90m(empty directory)\x1b[0m\r\n';
+        }
+
+        if (!longFormat) {
+          const names = entries.map((e) => {
+            if (e.isDirectory()) {
+              return `\x1b[1;34m${e.name}/\x1b[0m`;
+            } else if (/\.(js|mjs|cjs|py|sh|bat|cmd|exe)$/i.test(e.name)) {
+              return `\x1b[1;32m${e.name}\x1b[0m`;
+            }
+            return `\x1b[0m${e.name}\x1b[0m`;
+          });
+          return names.join('  ') + '\r\n';
+        }
+
+        let out = `total ${entries.length}\r\n`;
+        for (const entry of entries) {
+          try {
+            const st = fs.statSync(path.join(dirPath, entry.name));
+            const typeChar = entry.isDirectory() ? 'd' : '-';
+            const sizeStr = String(st.size).padStart(8, ' ');
+            const mtime = st.mtime.toLocaleDateString() + ' ' + st.mtime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            const nameColor = entry.isDirectory()
+              ? `\x1b[1;34m${entry.name}/\x1b[0m`
+              : (/\.(js|mjs|cjs|py|sh|bat|cmd|exe)$/i.test(entry.name) ? `\x1b[1;32m${entry.name}\x1b[0m` : entry.name);
+            out += `${typeChar}rwxr-xr-x 1 collabide collabide ${sizeStr} ${mtime} ${nameColor}\r\n`;
+          } catch {
+            out += `-rwxr-xr-x 1 collabide collabide        0 Jan 01 00:00 ${entry.name}\r\n`;
+          }
+        }
+        return out;
+      } catch (err: any) {
+        return `\x1b[31mls: ${err.message}\x1b[0m\r\n`;
+      }
+    };
+
+    const executeCommand = (cmd: string) => {
+      const trimmed = cmd.trim();
+      if (!trimmed) {
+        printPrompt();
+        return;
+      }
+
+      const [firstWord, ...args] = trimmed.split(/\s+/);
+      const lower = firstWord.toLowerCase();
+
+      // 1. Built-in: pwd
+      if (lower === 'pwd') {
+        onData(`${currentCwd}\r\n`);
+        printPrompt();
+        return;
+      }
+
+      // 2. Built-in: cd
+      if (lower === 'cd') {
+        const target = args.join(' ').trim();
+        let targetDir = projectDir;
+
+        if (target && target !== '~' && target !== '/') {
+          targetDir = path.resolve(currentCwd, target);
+        }
+
+        // Workspace isolation: forbid navigating outside project directory
+        const rel = path.relative(projectDir, targetDir);
+        if (rel.startsWith('..') || path.isAbsolute(rel)) {
+          onData(`\x1b[31mcd: Access denied: Path traversal outside project workspace is restricted.\x1b[0m\r\n`);
+          printPrompt();
+          return;
+        }
+
+        if (!fs.existsSync(targetDir)) {
+          onData(`\x1b[31mcd: ${target}: No such file or directory\x1b[0m\r\n`);
+          printPrompt();
+          return;
+        }
+
+        try {
+          const stat = fs.statSync(targetDir);
+          if (!stat.isDirectory()) {
+            onData(`\x1b[31mcd: ${target}: Not a directory\x1b[0m\r\n`);
+            printPrompt();
+            return;
+          }
+          currentCwd = targetDir;
+        } catch (err: any) {
+          onData(`\x1b[31mcd: ${err.message}\x1b[0m\r\n`);
+        }
+        printPrompt();
+        return;
+      }
+
+      // 3. Built-in: ls or dir
+      if (lower === 'ls' || lower === 'dir') {
+        const isLong = args.some((a) => a.startsWith('-') && a.includes('l'));
+        const dirArg = args.find((a) => !a.startsWith('-'));
+        let targetDir = currentCwd;
+        if (dirArg) {
+          targetDir = path.resolve(currentCwd, dirArg);
+          const rel = path.relative(projectDir, targetDir);
+          if (rel.startsWith('..') || path.isAbsolute(rel)) {
+            onData(`\x1b[31mls: Access denied: Path traversal outside workspace.\x1b[0m\r\n`);
+            printPrompt();
+            return;
+          }
+        }
+        onData(formatDirectoryListing(targetDir, isLong));
+        printPrompt();
+        return;
+      }
+
+      // 4. Built-in: clear or cls
+      if (lower === 'clear' || lower === 'cls') {
+        onData('\x1b[2J\x1b[H');
+        printPrompt();
+        return;
+      }
+
+      // 5. Built-in: exit
+      if (lower === 'exit') {
+        onData(`\r\n\x1b[90m[Process exited with code 0]\x1b[0m\r\n`);
+        isTerminated = true;
+        killActiveProcess();
+        ExecutionService.activeProcesses.delete(sessionId);
+        onExit(0);
+        return;
+      }
+
+      // 6. Built-in: help
+      if (lower === 'help') {
+        onData(
+          `\r\n\x1b[1;36mCollabIDE Interactive Terminal Commands:\x1b[0m\r\n` +
+          `  \x1b[32mpwd\x1b[0m                   Print current working directory\r\n` +
+          `  \x1b[32mcd <dir>\x1b[0m              Change directory (scoped within workspace)\r\n` +
+          `  \x1b[32mls [-l] / dir\x1b[0m         List files in current directory\r\n` +
+          `  \x1b[32mclear / cls\x1b[0m           Clear screen buffer\r\n` +
+          `  \x1b[32mexit\x1b[0m                  Close terminal session\r\n` +
+          `  \x1b[32mhelp\x1b[0m                  Display this guidance\r\n` +
+          `\x1b[1;36mExternal System Runtimes:\x1b[0m\r\n` +
+          `  \x1b[32mnpm <args>\x1b[0m            Node Package Manager (installed)\r\n` +
+          `  \x1b[32mgit <args>\x1b[0m            Git Version Control (installed)\r\n` +
+          `  \x1b[32mnode / python\x1b[0m         Execute project files\r\n\r\n`
+        );
+        printPrompt();
+        return;
+      }
+
+      // 7. Spawn external command
+      const isWin = process.platform === 'win32';
+      const shell = isWin ? (process.env.ComSpec || 'cmd.exe') : (process.env.SHELL || '/bin/sh');
+      const shellArgs = isWin ? ['/d', '/s', '/c', trimmed] : ['-c', trimmed];
+
+      try {
+        const child = spawn(shell, shellArgs, {
+          cwd: currentCwd,
+          env: ExecutionService.getSafeEnv(),
+          windowsVerbatimArguments: isWin,
+        });
+
+        currentChild = child;
+        ExecutionService.activeProcesses.set(`${sessionId}_cmd`, child);
+
+        const formatOutput = (buf: Buffer | string) => {
+          return buf.toString().replace(/\r?\n/g, '\r\n');
+        };
+
+        child.stdout?.on('data', (data) => {
+          if (!isTerminated) {
+            onData(formatOutput(data));
+          }
+        });
+
+        child.stderr?.on('data', (data) => {
+          if (!isTerminated) {
+            onData(formatOutput(data));
+          }
+        });
+
+        // Command timeout guard
+        currentCommandTimer = setTimeout(() => {
+          if (currentChild === child) {
+            onData('\r\n\x1b[33m[CollabIDE] Command exceeded 120s timeout. Terminating...\x1b[0m\r\n');
+            killActiveProcess();
+            printPrompt();
+          }
+        }, 120000);
+
+        child.on('close', (code) => {
+          if (currentCommandTimer) {
+            clearTimeout(currentCommandTimer);
+            currentCommandTimer = null;
+          }
+          if (currentChild === child) {
+            currentChild = null;
+          }
+          ExecutionService.activeProcesses.delete(`${sessionId}_cmd`);
+          if (code !== 0 && code !== null) {
+            onData(`\r\n\x1b[90m[Process exited with code ${code}]\x1b[0m\r\n`);
+          }
+          printPrompt();
+        });
+
+        child.on('error', (err) => {
+          if (currentCommandTimer) {
+            clearTimeout(currentCommandTimer);
+            currentCommandTimer = null;
+          }
+          if (currentChild === child) {
+            currentChild = null;
+          }
+          ExecutionService.activeProcesses.delete(`${sessionId}_cmd`);
+          onData(`\r\n\x1b[31mProcess error: ${err.message}\x1b[0m\r\n`);
+          printPrompt();
+        });
+      } catch (err: any) {
+        onData(`\r\n\x1b[31mFailed to spawn command: ${err.message}\x1b[0m\r\n`);
+        printPrompt();
+      }
+    };
+
+    // Initial session start
+    setTimeout(() => {
+      if (!isTerminated) {
+        sendBanner();
+      }
+    }, 50);
 
     return {
       write: (data: string) => {
-        if (proc.killed || !proc.stdin?.writable) return;
+        if (isTerminated) return;
 
-        if (isWin) {
-          for (let i = 0; i < data.length; i++) {
-            const char = data[i];
-            const code = char.charCodeAt(0);
-
-            if (char === '\r') {
-              onData('\r\n');
-              const toSend = lineBuffer + '\r\n';
-              lineBuffer = '';
-              proc.stdin.write(toSend);
-              if (i + 1 < data.length && data[i + 1] === '\n') {
-                i++;
-              }
-            } else if (char === '\n') {
-              onData('\r\n');
-              const toSend = lineBuffer + '\r\n';
-              lineBuffer = '';
-              proc.stdin.write(toSend);
-            } else if (code === 127 || code === 8) {
-              if (lineBuffer.length > 0) {
-                lineBuffer = lineBuffer.slice(0, -1);
-                onData('\b \b');
-              }
-            } else if (code === 3) {
-              // Ctrl+C
-              onData('^C\r\n');
-              lineBuffer = '';
-              proc.stdin.write('\x03');
-            } else if (code === 9) {
-              // Tab
-              lineBuffer += '  ';
-              onData('  ');
-            } else if (code >= 32) {
-              lineBuffer += char;
-              onData(char);
-            }
+        // If a command process is running, forward raw keystrokes or handle Ctrl+C
+        if (currentChild && !currentChild.killed) {
+          if (data.includes('\x03')) {
+            onData('^C\r\n');
+            killActiveProcess();
+            printPrompt();
+            return;
           }
-        } else {
-          proc.stdin.write(data);
+          if (currentChild.stdin?.writable) {
+            currentChild.stdin.write(data);
+          }
+          return;
+        }
+
+        // At interactive prompt
+        // Check for Arrow Keys / Escape sequences
+        if (data === '\x1b[A') {
+          // Up arrow: recall previous history
+          if (history.length > 0 && historyIndex > 0) {
+            historyIndex--;
+            const item = history[historyIndex] || '';
+            onData(`\r\x1b[K${getPrompt()}${item}`);
+            lineBuffer = item;
+          }
+          return;
+        }
+
+        if (data === '\x1b[B') {
+          // Down arrow: recall next history
+          if (historyIndex < history.length - 1) {
+            historyIndex++;
+            const item = history[historyIndex] || '';
+            onData(`\r\x1b[K${getPrompt()}${item}`);
+            lineBuffer = item;
+          } else if (historyIndex === history.length - 1) {
+            historyIndex = history.length;
+            onData(`\r\x1b[K${getPrompt()}`);
+            lineBuffer = '';
+          }
+          return;
+        }
+
+        if (data === '\x03') {
+          // Ctrl+C at prompt: clear buffer and newline
+          onData('^C\r\n');
+          lineBuffer = '';
+          printPrompt();
+          return;
+        }
+
+        if (data === '\x0c') {
+          // Ctrl+L: clear screen
+          onData(`\x1b[2J\x1b[H${getPrompt()}${lineBuffer}`);
+          return;
+        }
+
+        if (data === '\t') {
+          // Tab auto-complete
+          try {
+            const parts = lineBuffer.split(/\s+/);
+            const token = parts[parts.length - 1] || '';
+            if (token) {
+              const files = fs.readdirSync(currentCwd);
+              const matched = files.filter((f) => f.toLowerCase().startsWith(token.toLowerCase()));
+              if (matched.length === 1) {
+                const completion = matched[0].slice(token.length);
+                lineBuffer += completion;
+                onData(completion);
+              } else if (matched.length > 1) {
+                onData(`\r\n${matched.join('  ')}\r\n${getPrompt()}${lineBuffer}`);
+              }
+            }
+          } catch {
+            // ignore
+          }
+          return;
+        }
+
+        // Process individual characters
+        for (let i = 0; i < data.length; i++) {
+          const char = data[i];
+          const code = char.charCodeAt(0);
+
+          if (char === '\r' || char === '\n') {
+            onData('\r\n');
+            const cmd = lineBuffer;
+            lineBuffer = '';
+            if (cmd.trim()) {
+              if (history[history.length - 1] !== cmd.trim()) {
+                history.push(cmd.trim());
+              }
+              historyIndex = history.length;
+            }
+            if (char === '\r' && i + 1 < data.length && data[i + 1] === '\n') {
+              i++;
+            }
+            executeCommand(cmd);
+            break;
+          } else if (code === 127 || code === 8) {
+            // Backspace
+            if (lineBuffer.length > 0) {
+              lineBuffer = lineBuffer.slice(0, -1);
+              onData('\b \b');
+            }
+          } else if (code >= 32) {
+            lineBuffer += char;
+            onData(char);
+          }
         }
       },
-      resize: (_cols: number, _rows: number) => {
-        // Child_process standard spawn does not resize winpty columns directly,
-        // but preserves valid line buffers
+      resize: (newCols: number, newRows: number) => {
+        cols = newCols || 80;
+        rows = newRows || 24;
+      },
+      restart: () => {
+        killActiveProcess();
+        lineBuffer = '';
+        currentCwd = projectDir;
+        onData('\x1b[2J\x1b[H');
+        sendBanner();
       },
       kill: () => {
-        if (!proc.killed) {
-          try {
-            proc.kill();
-          } catch {
-            // Process cleanup
-          }
-          this.activeProcesses.delete(sessionId);
-        }
+        isTerminated = true;
+        killActiveProcess();
+        ExecutionService.activeProcesses.delete(sessionId);
       },
     };
   }
