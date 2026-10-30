@@ -32,6 +32,7 @@ export const App: React.FC = () => {
     handleRemoteFileSaved,
     handleRemoteFileRenamed,
     handleRemoteFileDeleted,
+    setActiveActivity,
   } = useProjectStore();
   const { setCollaborators, updateUserActivity } = useCollaborationStore();
   const { setNewProjectModalOpen } = useSettingsStore();
@@ -122,6 +123,18 @@ export const App: React.FC = () => {
       unsubFileRenamed();
       unsubFileDeleted();
     };
+  }, []);
+
+  // 5. Global shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'F' || e.key === 'f')) {
+        e.preventDefault();
+        setActiveActivity('search');
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
   return (

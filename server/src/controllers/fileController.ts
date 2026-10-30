@@ -175,20 +175,26 @@ export class FileController {
   static async search(req: AuthRequest, res: Response): Promise<void> {
     try {
       const projectId = String(req.params.projectId);
-      const { q, matchCase, wholeWord, isRegex } = req.query;
+      const { q, matchCase, wholeWord, isRegex, limit } = req.query;
 
-      if (!q || typeof q !== 'string') {
-        res.json({ results: [] });
+      if (!q || typeof q !== 'string' || !q.trim()) {
+        res.json({ results: [], totalMatches: 0, hasMore: false });
         return;
       }
 
-      const results = await FileService.searchAcrossFiles(projectId, q, {
+      const maxLimit = limit ? Math.min(Math.max(1, Number(limit)), 500) : 200;
+      const results = await FileService.searchAcrossFiles(projectId, q.trim(), {
         matchCase: matchCase === 'true',
         wholeWord: wholeWord === 'true',
         isRegex: isRegex === 'true',
+        limit: maxLimit,
       });
 
-      res.json({ results });
+      res.json({
+        results,
+        totalMatches: results.length,
+        hasMore: results.length >= maxLimit,
+      });
     } catch (err: any) {
       res.status(500).json({ error: 'Search failed' });
     }

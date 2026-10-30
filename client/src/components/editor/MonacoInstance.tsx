@@ -14,7 +14,7 @@ interface MonacoInstanceProps {
 
 export const MonacoInstance: React.FC<MonacoInstanceProps> = ({ isSplit = false }) => {
   const { currentProject, files, saveFile } = useProjectStore();
-  const { tabs, activeTabId, splitTabs, activeSplitTabId, setTabDirty } = useEditorStore();
+  const { tabs, activeTabId, splitTabs, activeSplitTabId, setTabDirty, targetLocation } = useEditorStore();
   const { settings, setCommandPaletteOpen, setQuickOpenOpen } = useSettingsStore();
   const { user } = useAuthStore();
 
@@ -26,6 +26,34 @@ export const MonacoInstance: React.FC<MonacoInstanceProps> = ({ isSplit = false 
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
   const [editorInstance, setEditorInstance] = useState<monaco.editor.IStandaloneCodeEditor | null>(null);
   const yjsSessionRef = useRef<YjsSession | null>(null);
+
+  // Jump to and highlight matching text when targetLocation is set
+  useEffect(() => {
+    if (!editorInstance || !activeTab || !targetLocation) return;
+    if (targetLocation.fileId !== activeTab.fileId) return;
+
+    const line = Math.max(1, targetLocation.lineNumber);
+    const colStart = targetLocation.colStart !== undefined
+      ? targetLocation.colStart
+      : (targetLocation.matchStart !== undefined ? targetLocation.matchStart + 1 : 1);
+    const colEnd = targetLocation.colEnd !== undefined
+      ? targetLocation.colEnd
+      : (targetLocation.matchEnd !== undefined ? targetLocation.matchEnd + 1 : colStart);
+
+    try {
+      editorInstance.revealLineInCenter(line);
+      editorInstance.setPosition({ lineNumber: line, column: colStart });
+      editorInstance.setSelection({
+        startLineNumber: line,
+        startColumn: colStart,
+        endLineNumber: line,
+        endColumn: colEnd,
+      });
+      editorInstance.focus();
+    } catch (err) {
+      console.warn('[Navigation jump error]', err);
+    }
+  }, [editorInstance, activeTab?.fileId, targetLocation?.nonce]);
 
   // Bind and maintain Yjs multiplayer CRDT & live cursor awareness
   useEffect(() => {
