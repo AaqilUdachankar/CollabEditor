@@ -191,6 +191,37 @@ export const api = {
       }),
   },
 
+  // Whiteboards
+  whiteboard: {
+    list: (projectId: string) => request<{ whiteboards: any[] }>(`/projects/${projectId}/whiteboards`),
+    get: (projectId: string, boardId: string) =>
+      request<{ whiteboard: any; operations: any[] }>(`/projects/${projectId}/whiteboards/${boardId}`),
+    create: (projectId: string, data: { targetUserId: string; title?: string; initialCanvasData?: any }) =>
+      request<{ whiteboard: any }>(`/projects/${projectId}/whiteboards`, {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+    update: (projectId: string, boardId: string, canvasData: any) =>
+      request<{ whiteboard: any }>(`/projects/${projectId}/whiteboards/${boardId}`, {
+        method: 'PUT',
+        body: JSON.stringify({ canvasData }),
+      }),
+    delete: (projectId: string, boardId: string) =>
+      request<{ message: string; boardId?: string }>(`/projects/${projectId}/whiteboards/${boardId}`, {
+        method: 'DELETE',
+      }),
+    invite: (projectId: string, boardId: string, targetUserId: string) =>
+      request<{ whiteboard: any; message?: string }>(`/projects/${projectId}/whiteboards/${boardId}/invite`, {
+        method: 'POST',
+        body: JSON.stringify({ targetUserId }),
+      }),
+  },
+
+  // Video Calls
+  calls: {
+    getHistory: (projectId: string) => request<{ calls: any[] }>(`/projects/${projectId}/calls/history`),
+  },
+
   // Git
   git: {
     getStatus: (projectId: string) => request<IGitStatus>(`/projects/${projectId}/git/status`),

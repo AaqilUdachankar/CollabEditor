@@ -8,20 +8,26 @@ import {
   Users,
   Settings,
   User as UserIcon,
+
+  PenTool,
+
   Shield,
+
 } from 'lucide-react';
 import { useProjectStore } from '../../stores/projectStore.js';
 import { useGitStore } from '../../stores/gitStore.js';
 import { useCollaborationStore } from '../../stores/collaborationStore.js';
 import { useSettingsStore } from '../../stores/settingsStore.js';
 import { useAuthStore } from '../../stores/authStore.js';
+import { useWhiteboardStore } from '../../stores/whiteboardStore.js';
 
 export const ActivityBar: React.FC = () => {
-  const { activeActivity, setActiveActivity } = useProjectStore();
+  const { activeActivity, setActiveActivity, currentProject } = useProjectStore();
   const { status } = useGitStore();
   const { collaborators } = useCollaborationStore();
   const { setSettingsModalOpen, setAuthModalOpen } = useSettingsStore();
   const { isAuthenticated, user } = useAuthStore();
+  const { isOpen, activeBoard, setIsOpen, createAndOpenPrivateBoard } = useWhiteboardStore();
 
   const modifiedCount = status?.files.length || 0;
   const onlineCount = collaborators.length;
@@ -73,10 +79,31 @@ export const ActivityBar: React.FC = () => {
         <button
           className={`activity-btn ${activeActivity === 'collab' ? 'active' : ''}`}
           onClick={() => setActiveActivity('collab')}
-          title="Collaborators & Room Presence"
+          title="Collaborators, Video Calls & Whiteboard"
         >
           <Users size={22} />
           {onlineCount > 0 && <span className="activity-badge">{onlineCount}</span>}
+        </button>
+
+
+        <button
+          className={`activity-btn ${isOpen ? 'active' : ''}`}
+          onClick={() => {
+            if (activeBoard) {
+              setIsOpen(!isOpen);
+            } else if (currentProject && user) {
+              createAndOpenPrivateBoard(
+                { id: user.id, username: user.username, avatarColor: user.avatarColor },
+                currentProject.id,
+                'Project Whiteboard'
+              );
+            } else {
+              setActiveActivity('collab');
+            }
+          }}
+          title="Open Miro Collaborative Whiteboard"
+        >
+          <PenTool size={22} />
         </button>
 
         {user?.role === 'admin' && (
@@ -89,6 +116,7 @@ export const ActivityBar: React.FC = () => {
             <Shield size={22} />
           </button>
         )}
+
       </div>
 
       <div className="activity-bar-group">

@@ -4,6 +4,8 @@ import jwt from 'jsonwebtoken';
 import { config } from '../config/index.js';
 import { ProjectMemberRepository } from '../models/ProjectMember.js';
 import { ProjectRepository } from '../models/Project.js';
+import { registerVideoCallHandlers } from './videoCallHandler.js';
+import { registerWhiteboardHandlers } from './whiteboardHandler.js';
 import { UserRepository } from '../models/User.js';
 import { recordActivity, sanitizePath } from '../services/activitySanitizer.js';
 import { HealthMetricsService } from '../services/healthMetricsService.js';
@@ -70,6 +72,13 @@ export function setupSocketIO(httpServer: HttpServer): SocketIOServer {
 
   io.on('connection', (socket) => {
     const user = socket.data.user;
+
+    // Join private personal user room for direct 1-to-1 private signaling and invites
+    socket.join(`user:${user.id}`);
+
+    // Register private 1-to-1 video calling and whiteboard handlers
+    registerVideoCallHandlers(io, socket);
+    registerWhiteboardHandlers(io, socket);
 
     socket.on('join:project', async ({ projectId, avatarColor }) => {
       try {
