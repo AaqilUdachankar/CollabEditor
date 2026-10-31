@@ -2,28 +2,18 @@ import React, { useState, useEffect } from 'react';
 import {
   Users,
   UserPlus,
-
-  Shield,
-  Eye,
-  Edit3,
   Trash2,
-  CheckCircle2,
   Circle,
   Video,
   PenTool,
   Sparkles,
-  ExternalLink,
   ChevronRight,
-
-  Trash2,
-  Circle,
   History,
   RefreshCw,
   FileText,
   Play,
   GitCommit,
   Filter,
-
 } from 'lucide-react';
 import { useProjectStore } from '../../stores/projectStore.js';
 import { useCollaborationStore } from '../../stores/collaborationStore.js';
@@ -65,11 +55,8 @@ export const CollaboratorsView: React.FC = () => {
   useEffect(() => {
     if (currentProject) {
       loadMembers();
-
       loadProjectBoards(currentProject.id);
-
       loadActivities(1, true);
-
     }
   }, [currentProject?.id]);
 
@@ -227,16 +214,10 @@ export const CollaboratorsView: React.FC = () => {
 
   const isOwner = currentProject?.ownerId === user?.id;
 
-
   // Check if a member is currently online
   const isUserOnline = (userId: string) => {
     return collaborators.some((c) => c.userId === userId);
   };
-
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflowY: 'auto' }}>
-      <div className="sidebar-header">
-        <span>COLLABORATORS</span>
 
   const getActivityIcon = (eventType: string) => {
     if (eventType.includes('execution')) return <Play size={11} color="#10b981" />;
@@ -261,110 +242,6 @@ export const CollaboratorsView: React.FC = () => {
           </button>
         </div>
       </div>
-
-
-      <div className="sidebar-content" style={{ padding: '10px' }}>
-        {/* Quick Test Alert Banners Bar */}
-        <div
-          style={{
-            marginBottom: 14,
-            padding: '8px',
-            backgroundColor: 'rgba(255,255,255,0.03)',
-            borderRadius: 6,
-            border: '1px solid #27272a',
-          }}
-        >
-          <div style={{ fontSize: 10, color: '#94a3b8', fontWeight: 600, marginBottom: 6 }}>
-            QUICK TEST INVITATIONS:
-          </div>
-          <div style={{ display: 'flex', gap: 6 }}>
-            <button
-              id="btn-trigger-call-alert"
-              onClick={() =>
-                useVideoCallStore.getState().handleIncomingCall({
-                  callId: `call_test_${Date.now()}`,
-                  callerId: 'alex_demo',
-                  callerName: 'Alex Rivera',
-                  avatarColor: '#10b981',
-                  projectId: currentProject?.id || 'demo',
-                })
-              }
-              style={{
-                flex: 1,
-                padding: '5px 8px',
-                backgroundColor: 'rgba(59, 130, 246, 0.15)',
-                color: '#60a5fa',
-                border: '1px solid rgba(59, 130, 246, 0.3)',
-                borderRadius: 4,
-                fontSize: 10,
-                fontWeight: 600,
-                cursor: 'pointer',
-              }}
-            >
-              🔔 Test Call
-            </button>
-            <button
-              id="btn-trigger-board-alert"
-              onClick={() =>
-                useWhiteboardStore.getState().handleIncomingInvite({
-                  boardId: `wb_test_${Date.now()}`,
-                  callerId: 'alex_demo',
-                  callerName: 'Alex Rivera',
-                  avatarColor: '#10b981',
-                  title: 'Sprint Wireframe Session',
-                  projectId: currentProject?.id || 'demo',
-                })
-              }
-              style={{
-                flex: 1,
-                padding: '5px 8px',
-                backgroundColor: 'rgba(168, 85, 247, 0.15)',
-                color: '#c084fc',
-                border: '1px solid rgba(168, 85, 247, 0.3)',
-                borderRadius: 4,
-                fontSize: 10,
-                fontWeight: 600,
-                cursor: 'pointer',
-              }}
-            >
-              🎨 Test Board
-            </button>
-          </div>
-        </div>
-
-        {/* Workspace Members & 1-to-1 Action Bar */}
-        <div style={{ marginBottom: 18 }}>
-          <div
-            style={{
-              fontSize: 11,
-              fontWeight: 600,
-              color: '#858585',
-              marginBottom: 8,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <Users size={12} color="#38bdf8" />
-              <span>TEAM MEMBERS ({members.length})</span>
-            </div>
-            <button
-              onClick={handleStartTeamCall}
-              id="btn-start-team-call"
-              style={{
-                background: 'rgba(59, 130, 246, 0.15)',
-                color: '#38bdf8',
-                border: '1px solid rgba(59, 130, 246, 0.3)',
-                padding: '2px 8px',
-                borderRadius: 4,
-                cursor: 'pointer',
-                fontSize: 10,
-                fontWeight: 600,
-                display: 'flex',
-                alignItems: 'center',
-                gap: 4,
-                transition: 'all 0.15s ease',
 
       {/* Tabs Switcher */}
       <div
@@ -421,47 +298,80 @@ export const CollaboratorsView: React.FC = () => {
 
       {/* Tab 1: Participants & Members */}
       {activeTab === 'participants' && (
-        <div className="sidebar-content" style={{ padding: '10px', overflowY: 'auto' }}>
-          {/* Live Online Active Peers */}
-          <div style={{ marginBottom: 20 }}>
-            <div
-              style={{
-                fontSize: 11,
-                fontWeight: 600,
-                color: '#858585',
-                marginBottom: 8,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-
-              }}
-              title="Start Video Call with All Team Members"
-            >
-
-              <Video size={11} />
-              <span>Team Call</span>
-            </button>
+        <div className="sidebar-content" style={{ padding: '10px', overflowY: 'auto', flex: 1 }}>
+          {/* Quick Test Alert Banners Bar */}
+          <div
+            style={{
+              marginBottom: 14,
+              padding: '8px',
+              backgroundColor: 'rgba(255,255,255,0.03)',
+              borderRadius: 6,
+              border: '1px solid #27272a',
+            }}
+          >
+            <div style={{ fontSize: 10, color: '#94a3b8', fontWeight: 600, marginBottom: 6 }}>
+              QUICK TEST INVITATIONS:
+            </div>
+            <div style={{ display: 'flex', gap: 6 }}>
+              <button
+                id="btn-trigger-call-alert"
+                onClick={() =>
+                  useVideoCallStore.getState().handleIncomingCall({
+                    callId: `call_test_${Date.now()}`,
+                    callerId: 'alex_demo',
+                    callerName: 'Alex Rivera',
+                    avatarColor: '#10b981',
+                    projectId: currentProject?.id || 'demo',
+                  })
+                }
+                style={{
+                  flex: 1,
+                  padding: '5px 8px',
+                  backgroundColor: 'rgba(59, 130, 246, 0.15)',
+                  color: '#60a5fa',
+                  border: '1px solid rgba(59, 130, 246, 0.3)',
+                  borderRadius: 4,
+                  fontSize: 10,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                🔔 Test Call
+              </button>
+              <button
+                id="btn-trigger-board-alert"
+                onClick={() =>
+                  useWhiteboardStore.getState().handleIncomingInvite({
+                    boardId: `wb_test_${Date.now()}`,
+                    callerId: 'alex_demo',
+                    callerName: 'Alex Rivera',
+                    avatarColor: '#10b981',
+                    title: 'Sprint Wireframe Session',
+                    projectId: currentProject?.id || 'demo',
+                  })
+                }
+                style={{
+                  flex: 1,
+                  padding: '5px 8px',
+                  backgroundColor: 'rgba(168, 85, 247, 0.15)',
+                  color: '#c084fc',
+                  border: '1px solid rgba(168, 85, 247, 0.3)',
+                  borderRadius: 4,
+                  fontSize: 10,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                🎨 Test Board
+              </button>
+            </div>
           </div>
 
-          {members.map((m) => {
-            const isSelf = m.userId === user?.id;
-            const online = isUserOnline(m.userId);
-
-            return (
-              <div
-                key={m.userId}
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: 6,
-                  padding: '8px 10px',
-                  borderRadius: 6,
-                  marginBottom: 6,
-
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <Circle size={8} fill="#22c55e" color="#22c55e" />
-                <span>ONLINE NOW ({collaborators.length})</span>
-              </div>
+          {/* Live Online Active Peers */}
+          <div style={{ marginBottom: 18 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 600, color: '#858585', marginBottom: 8 }}>
+              <Circle size={8} fill="#22c55e" color="#22c55e" />
+              <span>ONLINE NOW ({collaborators.length})</span>
             </div>
 
             {collaborators.map((c) => (
@@ -474,409 +384,10 @@ export const CollaboratorsView: React.FC = () => {
                   padding: '6px 8px',
                   borderRadius: 4,
                   marginBottom: 4,
-
                   backgroundColor: 'rgba(255,255,255,0.02)',
                   border: '1px solid #282828',
                 }}
               >
-
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <div style={{ position: 'relative' }}>
-                      <div
-                        style={{
-                          width: 26,
-                          height: 26,
-                          borderRadius: '50%',
-                          backgroundColor: m.avatarColor || '#3b82f6',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          color: 'white',
-                          fontSize: 10,
-                          fontWeight: 700,
-                        }}
-                      >
-                        {m.username.substring(0, 2).toUpperCase()}
-                      </div>
-                      <span
-                        style={{
-                          position: 'absolute',
-                          bottom: -1,
-                          right: -1,
-                          width: 8,
-                          height: 8,
-                          borderRadius: '50%',
-                          backgroundColor: online ? '#22c55e' : '#71717a',
-                          border: '1.5px solid #18181b',
-                        }}
-                        title={online ? 'Online' : 'Offline'}
-                      />
-                    </div>
-
-                    <div>
-                      <div style={{ fontWeight: 600, fontSize: 12, color: 'white' }}>
-                        {m.username} {isSelf ? '(You)' : ''}
-                      </div>
-                      <div style={{ fontSize: 10, color: online ? '#4ade80' : '#71717a' }}>
-                        {online ? 'Active now' : 'Offline'} · {m.role}
-                      </div>
-                    </div>
-                  </div>
-
-                  {isOwner && !isSelf && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                      <select
-                        value={m.role}
-                        onChange={(e) => handleRoleChange(m.userId, e.target.value)}
-                        style={{
-                          background: '#2a2a2a',
-                          color: '#cccccc',
-                          border: '1px solid #3c3c3c',
-                          fontSize: 10,
-                          borderRadius: 3,
-                          padding: '2px 4px',
-                        }}
-                      >
-                        <option value="editor">Editor</option>
-                        <option value="viewer">Viewer</option>
-                      </select>
-                      <button
-                        onClick={() => handleRemoveMember(m.userId)}
-                        title="Remove from project"
-                        className="sidebar-icon-btn"
-                        style={{ color: '#f87171' }}
-                      >
-                        <Trash2 size={12} />
-                      </button>
-                    </div>
-                  )}
-                </div>
-
-                {/* 1-to-1 Private Collaboration Action Buttons */}
-                {!isSelf && (
-                  <div style={{ display: 'flex', gap: 6, marginTop: 4 }}>
-                    {/* Private Video Call */}
-                    <button
-                      onClick={() => handleStartCall(m)}
-                      style={{
-                        flex: 1,
-                        padding: '4px 6px',
-                        backgroundColor: '#27272a',
-                        border: '1px solid #3f3f46',
-                        borderRadius: 4,
-                        color: '#60a5fa',
-                        fontSize: 10,
-                        fontWeight: 600,
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: 4,
-                        transition: 'background 0.15s ease',
-                      }}
-                      title="Start 1-to-1 Private Video Call"
-                    >
-                      <Video size={11} />
-                      <span>Call</span>
-                    </button>
-
-                    {/* Private Whiteboard */}
-                    <button
-                      onClick={() => handleStartWhiteboard(m)}
-                      style={{
-                        flex: 1,
-                        padding: '4px 6px',
-                        backgroundColor: '#27272a',
-                        border: '1px solid #3f3f46',
-                        borderRadius: 4,
-                        color: '#c084fc',
-                        fontSize: 10,
-                        fontWeight: 600,
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: 4,
-                        transition: 'background 0.15s ease',
-                      }}
-                      title="Create Private Collaborative Whiteboard"
-                    >
-                      <PenTool size={11} />
-                      <span>Board</span>
-                    </button>
-
-                    {/* Integrated Video + Whiteboard Collaboration */}
-                    <button
-                      onClick={() => handleStartCollaboration(m)}
-                      style={{
-                        flex: 1.2,
-                        padding: '4px 6px',
-                        backgroundColor: 'rgba(59, 130, 246, 0.15)',
-                        border: '1px solid rgba(59, 130, 246, 0.4)',
-                        borderRadius: 4,
-                        color: '#38bdf8',
-                        fontSize: 10,
-                        fontWeight: 600,
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: 4,
-                        transition: 'background 0.15s ease',
-                      }}
-                      title="Start Private Collaboration (Video + Whiteboard together)"
-                    >
-                      <Sparkles size={11} />
-                      <span>Collab</span>
-                    </button>
-                  </div>
-                )}
-              </div>
-            );
-          })}
-
-          {/* If only self is in members, show demo teammate for instant testing */}
-          {members.length <= 1 && (
-            <div
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 6,
-                padding: '8px 10px',
-                borderRadius: 6,
-                marginBottom: 6,
-                backgroundColor: 'rgba(59, 130, 246, 0.05)',
-                border: '1px dashed #3b82f6',
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <div style={{ position: 'relative' }}>
-                    <div
-                      style={{
-                        width: 26,
-                        height: 26,
-                        borderRadius: '50%',
-                        backgroundColor: '#10b981',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        color: 'white',
-                        fontSize: 10,
-                        fontWeight: 700,
-                      }}
-                    >
-                      AR
-                    </div>
-                    <span
-                      style={{
-                        position: 'absolute',
-                        bottom: -1,
-                        right: -1,
-                        width: 8,
-                        height: 8,
-                        borderRadius: '50%',
-                        backgroundColor: '#22c55e',
-                        border: '1.5px solid #18181b',
-                      }}
-                      title="Online"
-                    />
-                  </div>
-
-                  <div>
-                    <div style={{ fontWeight: 600, fontSize: 12, color: 'white' }}>
-                      Alex Rivera <span style={{ fontSize: 9, color: '#38bdf8' }}>(Teammate)</span>
-                    </div>
-                    <div style={{ fontSize: 10, color: '#4ade80' }}>
-                      Active now · editor
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Action buttons for Alex */}
-              <div style={{ display: 'flex', gap: 6, marginTop: 4 }}>
-                <button
-                  onClick={() =>
-                    handleStartCall({
-                      id: 'demo_user_alex',
-                      username: 'Alex Rivera',
-                      avatarColor: '#10b981',
-                    })
-                  }
-                  style={{
-                    flex: 1,
-                    padding: '4px 6px',
-                    backgroundColor: '#27272a',
-                    border: '1px solid #3f3f46',
-                    borderRadius: 4,
-                    color: '#60a5fa',
-                    fontSize: 10,
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: 4,
-                  }}
-                  title="Start 1-to-1 Private Video Call with Alex"
-                >
-                  <Video size={11} />
-                  <span>Call</span>
-                </button>
-
-                <button
-                  onClick={() =>
-                    handleStartWhiteboard({
-                      id: 'demo_user_alex',
-                      username: 'Alex Rivera',
-                      avatarColor: '#10b981',
-                    })
-                  }
-                  style={{
-                    flex: 1,
-                    padding: '4px 6px',
-                    backgroundColor: '#27272a',
-                    border: '1px solid #3f3f46',
-                    borderRadius: 4,
-                    color: '#c084fc',
-                    fontSize: 10,
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: 4,
-                  }}
-                  title="Create Private Collaborative Whiteboard with Alex"
-                >
-                  <PenTool size={11} />
-                  <span>Board</span>
-                </button>
-
-                <button
-                  onClick={() =>
-                    handleStartCollaboration({
-                      id: 'demo_user_alex',
-                      username: 'Alex Rivera',
-                      avatarColor: '#10b981',
-                    })
-                  }
-                  style={{
-                    flex: 1.2,
-                    padding: '4px 6px',
-                    backgroundColor: 'rgba(59, 130, 246, 0.2)',
-                    border: '1px solid rgba(59, 130, 246, 0.4)',
-                    borderRadius: 4,
-                    color: '#38bdf8',
-                    fontSize: 10,
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: 4,
-                  }}
-                  title="Start Private Collaboration (Video + Whiteboard together)"
-                >
-                  <Sparkles size={11} />
-                  <span>Collab</span>
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Saved Private Whiteboards Section */}
-        <div>
-          <div
-            style={{
-              fontSize: 11,
-              fontWeight: 600,
-              color: '#858585',
-              marginBottom: 8,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <PenTool size={12} color="#c084fc" />
-              <span>PRIVATE WHITEBOARDS ({workspaceBoards.length})</span>
-            </div>
-            <button
-              onClick={() => {
-                if (currentProject && user) {
-                  createAndOpenPrivateBoard(
-                    { id: user.id, username: user.username, avatarColor: user.avatarColor },
-                    currentProject.id,
-                    `Board ${workspaceBoards.length + 1}`
-                  );
-                }
-              }}
-              style={{
-                background: 'rgba(192, 132, 252, 0.15)',
-                color: '#c084fc',
-                border: '1px solid rgba(192, 132, 252, 0.3)',
-                padding: '2px 8px',
-                borderRadius: 4,
-                cursor: 'pointer',
-                fontSize: 10,
-                fontWeight: 600,
-              }}
-              title="Create New Whiteboard"
-            >
-              + New Board
-            </button>
-          </div>
-
-          {workspaceBoards.map((b) => (
-            <div
-              key={b.boardId}
-              onClick={() => currentProject && openBoard(b.boardId, currentProject.id)}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                padding: '7px 10px',
-                borderRadius: 6,
-                backgroundColor: 'rgba(255,255,255,0.02)',
-                border: '1px solid #282828',
-                marginBottom: 4,
-                cursor: 'pointer',
-                transition: 'background 0.15s ease',
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
-                <PenTool size={13} color="#c084fc" />
-                <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  <div style={{ fontSize: 12, fontWeight: 500, color: '#f4f4f5' }}>
-                    {b.title}
-                  </div>
-                  <div style={{ fontSize: 10, color: '#71717a' }}>
-                    Updated {new Date(b.updatedAt).toLocaleDateString()}
-                  </div>
-                </div>
-              </div>
-
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <button
-                  onClick={(e) => handleDeleteBoard(b.boardId, e)}
-                  title="Delete Whiteboard"
-                  className="btn-delete-whiteboard"
-                  style={{
-                    background: 'transparent',
-                    border: 'none',
-                    color: '#ef4444',
-                    cursor: 'pointer',
-                    padding: '4px',
-                    borderRadius: '4px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    transition: 'all 0.15s ease',
-
                 <div
                   style={{
                     width: 24,
@@ -890,80 +401,8 @@ export const CollaboratorsView: React.FC = () => {
                     fontSize: 10,
                     fontWeight: 600,
                     flexShrink: 0,
-
                   }}
-                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.25)')}
-                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
                 >
-
-                  <Trash2 size={13} />
-                </button>
-                <ChevronRight size={13} color="#71717a" />
-              </div>
-            </div>
-          ))}
-
-          {workspaceBoards.length === 0 && (
-            <div style={{ fontSize: 11, color: '#71717a', padding: '6px 4px' }}>
-              No private whiteboards yet. Click '+ New Board' or 'Board' on a teammate to start!
-            </div>
-          )}
-
-          {/* Quick Simulation / Test Triggers */}
-          <div style={{ marginTop: 16, paddingTop: 12, borderTop: '1px solid #27272a' }}>
-            <div style={{ fontSize: 10, color: '#64748b', fontWeight: 600, marginBottom: 6 }}>
-              QUICK TEST INVITATION ALERTS:
-            </div>
-            <div style={{ display: 'flex', gap: 6 }}>
-              <button
-                onClick={() =>
-                  useVideoCallStore.getState().handleIncomingCall({
-                    callId: `call_test_${Date.now()}`,
-                    callerId: 'alex_demo',
-                    callerName: 'Alex Rivera',
-                    avatarColor: '#10b981',
-                    projectId: currentProject?.id || 'demo',
-                  })
-                }
-                style={{
-                  flex: 1,
-                  padding: '4px 6px',
-                  backgroundColor: '#27272a',
-                  color: '#60a5fa',
-                  border: '1px solid #3f3f46',
-                  borderRadius: 4,
-                  fontSize: 10,
-                  cursor: 'pointer',
-                }}
-              >
-                🔔 Test Call Alert
-              </button>
-              <button
-                onClick={() =>
-                  useWhiteboardStore.getState().handleIncomingInvite({
-                    boardId: `wb_test_${Date.now()}`,
-                    callerId: 'alex_demo',
-                    callerName: 'Alex Rivera',
-                    avatarColor: '#10b981',
-                    title: 'Sprint Wireframe Session',
-                    projectId: currentProject?.id || 'demo',
-                  })
-                }
-                style={{
-                  flex: 1,
-                  padding: '4px 6px',
-                  backgroundColor: '#27272a',
-                  color: '#c084fc',
-                  border: '1px solid #3f3f46',
-                  borderRadius: 4,
-                  fontSize: 10,
-                  cursor: 'pointer',
-                }}
-              >
-                🎨 Test Board Alert
-              </button>
-            </div>
-
                   {c.username.substring(0, 2).toUpperCase()}
                 </div>
 
@@ -995,77 +434,477 @@ export const CollaboratorsView: React.FC = () => {
             )}
           </div>
 
-          {/* Project Membership Roles */}
-          <div>
-            <div style={{ fontSize: 11, fontWeight: 600, color: '#858585', marginBottom: 8 }}>
-              MEMBERS ({members.length})
+          {/* Workspace Members & 1-to-1 Action Bar */}
+          <div style={{ marginBottom: 18 }}>
+            <div
+              style={{
+                fontSize: 11,
+                fontWeight: 600,
+                color: '#858585',
+                marginBottom: 8,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Users size={12} color="#38bdf8" />
+                <span>TEAM MEMBERS ({members.length})</span>
+              </div>
+              <button
+                onClick={handleStartTeamCall}
+                id="btn-start-team-call"
+                style={{
+                  background: 'rgba(59, 130, 246, 0.15)',
+                  color: '#38bdf8',
+                  border: '1px solid rgba(59, 130, 246, 0.3)',
+                  padding: '2px 8px',
+                  borderRadius: 4,
+                  cursor: 'pointer',
+                  fontSize: 10,
+                  fontWeight: 600,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 4,
+                  transition: 'all 0.15s ease',
+                }}
+                title="Start Video Call with All Team Members"
+              >
+                <Video size={11} />
+                <span>Team Call</span>
+              </button>
             </div>
 
-            {members.map((m) => (
+            {members.map((m) => {
+              const isSelf = m.userId === user?.id;
+              const online = isUserOnline(m.userId);
+
+              return (
+                <div
+                  key={m.userId}
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 6,
+                    padding: '8px 10px',
+                    borderRadius: 6,
+                    marginBottom: 6,
+                    backgroundColor: 'rgba(255,255,255,0.02)',
+                    border: '1px solid #282828',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <div style={{ position: 'relative' }}>
+                        <div
+                          style={{
+                            width: 26,
+                            height: 26,
+                            borderRadius: '50%',
+                            backgroundColor: m.avatarColor || '#3b82f6',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: 'white',
+                            fontSize: 10,
+                            fontWeight: 700,
+                          }}
+                        >
+                          {m.username.substring(0, 2).toUpperCase()}
+                        </div>
+                        <span
+                          style={{
+                            position: 'absolute',
+                            bottom: -1,
+                            right: -1,
+                            width: 8,
+                            height: 8,
+                            borderRadius: '50%',
+                            backgroundColor: online ? '#22c55e' : '#71717a',
+                            border: '1.5px solid #18181b',
+                          }}
+                          title={online ? 'Online' : 'Offline'}
+                        />
+                      </div>
+
+                      <div>
+                        <div style={{ fontWeight: 600, fontSize: 12, color: 'white' }}>
+                          {m.username} {isSelf ? '(You)' : ''}
+                        </div>
+                        <div style={{ fontSize: 10, color: online ? '#4ade80' : '#71717a' }}>
+                          {online ? 'Active now' : 'Offline'} · {m.role}
+                        </div>
+                      </div>
+                    </div>
+
+                    {isOwner && !isSelf && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <select
+                          value={m.role}
+                          onChange={(e) => handleRoleChange(m.userId, e.target.value)}
+                          style={{
+                            background: '#2a2a2a',
+                            color: '#cccccc',
+                            border: '1px solid #3c3c3c',
+                            fontSize: 10,
+                            borderRadius: 3,
+                            padding: '2px 4px',
+                          }}
+                        >
+                          <option value="editor">Editor</option>
+                          <option value="viewer">Viewer</option>
+                        </select>
+                        <button
+                          onClick={() => handleRemoveMember(m.userId)}
+                          title="Remove from project"
+                          className="sidebar-icon-btn"
+                          style={{ color: '#f87171' }}
+                        >
+                          <Trash2 size={12} />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* 1-to-1 Private Collaboration Action Buttons */}
+                  {!isSelf && (
+                    <div style={{ display: 'flex', gap: 6, marginTop: 4 }}>
+                      {/* Private Video Call */}
+                      <button
+                        onClick={() => handleStartCall(m)}
+                        style={{
+                          flex: 1,
+                          padding: '4px 6px',
+                          backgroundColor: '#27272a',
+                          border: '1px solid #3f3f46',
+                          borderRadius: 4,
+                          color: '#60a5fa',
+                          fontSize: 10,
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: 4,
+                          transition: 'background 0.15s ease',
+                        }}
+                        title="Start 1-to-1 Private Video Call"
+                      >
+                        <Video size={11} />
+                        <span>Call</span>
+                      </button>
+
+                      {/* Private Whiteboard */}
+                      <button
+                        onClick={() => handleStartWhiteboard(m)}
+                        style={{
+                          flex: 1,
+                          padding: '4px 6px',
+                          backgroundColor: '#27272a',
+                          border: '1px solid #3f3f46',
+                          borderRadius: 4,
+                          color: '#c084fc',
+                          fontSize: 10,
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: 4,
+                          transition: 'background 0.15s ease',
+                        }}
+                        title="Create Private Collaborative Whiteboard"
+                      >
+                        <PenTool size={11} />
+                        <span>Board</span>
+                      </button>
+
+                      {/* Integrated Video + Whiteboard Collaboration */}
+                      <button
+                        onClick={() => handleStartCollaboration(m)}
+                        style={{
+                          flex: 1.2,
+                          padding: '4px 6px',
+                          backgroundColor: 'rgba(59, 130, 246, 0.15)',
+                          border: '1px solid rgba(59, 130, 246, 0.4)',
+                          borderRadius: 4,
+                          color: '#38bdf8',
+                          fontSize: 10,
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: 4,
+                          transition: 'background 0.15s ease',
+                        }}
+                        title="Start Private Collaboration (Video + Whiteboard together)"
+                      >
+                        <Sparkles size={11} />
+                        <span>Collab</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+
+            {/* If only self is in members, show demo teammate for instant testing */}
+            {members.length <= 1 && (
               <div
-                key={m.userId}
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 6,
+                  padding: '8px 10px',
+                  borderRadius: 6,
+                  marginBottom: 6,
+                  backgroundColor: 'rgba(59, 130, 246, 0.05)',
+                  border: '1px dashed #3b82f6',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <div style={{ position: 'relative' }}>
+                      <div
+                        style={{
+                          width: 26,
+                          height: 26,
+                          borderRadius: '50%',
+                          backgroundColor: '#10b981',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: 'white',
+                          fontSize: 10,
+                          fontWeight: 700,
+                        }}
+                      >
+                        AR
+                      </div>
+                      <span
+                        style={{
+                          position: 'absolute',
+                          bottom: -1,
+                          right: -1,
+                          width: 8,
+                          height: 8,
+                          borderRadius: '50%',
+                          backgroundColor: '#22c55e',
+                          border: '1.5px solid #18181b',
+                        }}
+                        title="Online"
+                      />
+                    </div>
+
+                    <div>
+                      <div style={{ fontWeight: 600, fontSize: 12, color: 'white' }}>
+                        Alex Rivera <span style={{ fontSize: 9, color: '#38bdf8' }}>(Teammate)</span>
+                      </div>
+                      <div style={{ fontSize: 10, color: '#4ade80' }}>
+                        Active now · editor
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Action buttons for Alex */}
+                <div style={{ display: 'flex', gap: 6, marginTop: 4 }}>
+                  <button
+                    onClick={() =>
+                      handleStartCall({
+                        id: 'demo_user_alex',
+                        username: 'Alex Rivera',
+                        avatarColor: '#10b981',
+                      })
+                    }
+                    style={{
+                      flex: 1,
+                      padding: '4px 6px',
+                      backgroundColor: '#27272a',
+                      border: '1px solid #3f3f46',
+                      borderRadius: 4,
+                      color: '#60a5fa',
+                      fontSize: 10,
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 4,
+                    }}
+                    title="Start 1-to-1 Private Video Call with Alex"
+                  >
+                    <Video size={11} />
+                    <span>Call</span>
+                  </button>
+
+                  <button
+                    onClick={() =>
+                      handleStartWhiteboard({
+                        id: 'demo_user_alex',
+                        username: 'Alex Rivera',
+                        avatarColor: '#10b981',
+                      })
+                    }
+                    style={{
+                      flex: 1,
+                      padding: '4px 6px',
+                      backgroundColor: '#27272a',
+                      border: '1px solid #3f3f46',
+                      borderRadius: 4,
+                      color: '#c084fc',
+                      fontSize: 10,
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 4,
+                    }}
+                    title="Create Private Collaborative Whiteboard with Alex"
+                  >
+                    <PenTool size={11} />
+                    <span>Board</span>
+                  </button>
+
+                  <button
+                    onClick={() =>
+                      handleStartCollaboration({
+                        id: 'demo_user_alex',
+                        username: 'Alex Rivera',
+                        avatarColor: '#10b981',
+                      })
+                    }
+                    style={{
+                      flex: 1.2,
+                      padding: '4px 6px',
+                      backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                      border: '1px solid rgba(59, 130, 246, 0.4)',
+                      borderRadius: 4,
+                      color: '#38bdf8',
+                      fontSize: 10,
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 4,
+                    }}
+                    title="Start Private Collaboration (Video + Whiteboard together)"
+                  >
+                    <Sparkles size={11} />
+                    <span>Collab</span>
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Saved Private Whiteboards Section */}
+          <div>
+            <div
+              style={{
+                fontSize: 11,
+                fontWeight: 600,
+                color: '#858585',
+                marginBottom: 8,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <PenTool size={12} color="#c084fc" />
+                <span>PRIVATE WHITEBOARDS ({workspaceBoards.length})</span>
+              </div>
+              <button
+                onClick={() => {
+                  if (currentProject && user) {
+                    createAndOpenPrivateBoard(
+                      { id: user.id, username: user.username, avatarColor: user.avatarColor },
+                      currentProject.id,
+                      `Board ${workspaceBoards.length + 1}`
+                    );
+                  }
+                }}
+                style={{
+                  background: 'rgba(192, 132, 252, 0.15)',
+                  color: '#c084fc',
+                  border: '1px solid rgba(192, 132, 252, 0.3)',
+                  padding: '2px 8px',
+                  borderRadius: 4,
+                  cursor: 'pointer',
+                  fontSize: 10,
+                  fontWeight: 600,
+                }}
+                title="Create New Whiteboard"
+              >
+                + New Board
+              </button>
+            </div>
+
+            {workspaceBoards.map((b) => (
+              <div
+                key={b.boardId}
+                onClick={() => currentProject && openBoard(b.boardId, currentProject.id)}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
-                  padding: '6px 8px',
-                  borderBottom: '1px solid #282828',
-                  fontSize: 12,
+                  padding: '7px 10px',
+                  borderRadius: 6,
+                  backgroundColor: 'rgba(255,255,255,0.02)',
+                  border: '1px solid #282828',
+                  marginBottom: 4,
+                  cursor: 'pointer',
+                  transition: 'background 0.15s ease',
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
-                  <div
-                    style={{
-                      width: 22,
-                      height: 22,
-                      borderRadius: '50%',
-                      backgroundColor: m.avatarColor,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      color: 'white',
-                      fontSize: 9,
-                      fontWeight: 600,
-                      flexShrink: 0,
-                    }}
-                  >
-                    {m.username.substring(0, 2).toUpperCase()}
-                  </div>
+                  <PenTool size={13} color="#c084fc" />
                   <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    <div style={{ color: 'white', fontWeight: 500 }}>{m.username}</div>
-                    <div style={{ fontSize: 10, color: '#64748b' }}>{m.role}</div>
+                    <div style={{ fontSize: 12, fontWeight: 500, color: '#f4f4f5' }}>
+                      {b.title}
+                    </div>
+                    <div style={{ fontSize: 10, color: '#71717a' }}>
+                      Updated {new Date(b.updatedAt).toLocaleDateString()}
+                    </div>
                   </div>
                 </div>
 
-                {isOwner && m.role !== 'owner' && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <select
-                      value={m.role}
-                      onChange={(e) => handleRoleChange(m.userId, e.target.value)}
-                      style={{
-                        background: '#2a2a2a',
-                        color: '#cccccc',
-                        border: '1px solid #3c3c3c',
-                        fontSize: 10,
-                        borderRadius: 3,
-                        padding: '2px 4px',
-                      }}
-                    >
-                      <option value="editor">Editor</option>
-                      <option value="viewer">Viewer</option>
-                    </select>
-                    <button
-                      onClick={() => handleRemoveMember(m.userId)}
-                      title="Remove from project"
-                      className="sidebar-icon-btn"
-                      style={{ color: '#f87171' }}
-                    >
-                      <Trash2 size={12} />
-                    </button>
-                  </div>
-                )}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <button
+                    onClick={(e) => handleDeleteBoard(b.boardId, e)}
+                    title="Delete Whiteboard"
+                    className="btn-delete-whiteboard"
+                    style={{
+                      background: 'transparent',
+                      border: 'none',
+                      color: '#ef4444',
+                      cursor: 'pointer',
+                      padding: '4px',
+                      borderRadius: '4px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      transition: 'all 0.15s ease',
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.25)')}
+                    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                  >
+                    <Trash2 size={13} />
+                  </button>
+                  <ChevronRight size={13} color="#71717a" />
+                </div>
               </div>
             ))}
+
+            {workspaceBoards.length === 0 && (
+              <div style={{ fontSize: 11, color: '#71717a', padding: '6px 4px' }}>
+                No private whiteboards yet. Click '+ New Board' or 'Board' on a teammate to start!
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -1192,7 +1031,6 @@ export const CollaboratorsView: React.FC = () => {
                 )}
               </div>
             )}
-
           </div>
         </div>
       )}

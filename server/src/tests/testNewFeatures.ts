@@ -39,11 +39,9 @@ async function testRecentlyImplementedFeatures() {
     name: 'Feature Test Project',
     description: 'Testing whiteboard and calls',
     ownerId: testOwner.id,
-    rootFolderId: 'root',
     rootPath: 'C:\\test\\workspace',
     template: 'blank',
     isPublic: true,
-    tags: [],
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   });

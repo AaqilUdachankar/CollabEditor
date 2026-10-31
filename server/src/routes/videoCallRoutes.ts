@@ -8,7 +8,7 @@ const router = Router();
 // Get call history for current workspace
 router.get('/:projectId/calls/history', authMiddleware, requireProjectRole('viewer'), async (req: AuthRequest, res) => {
   try {
-    const { projectId } = req.params;
+    const projectId = req.params.projectId as string;
     const userId = req.user!.id;
 
     const calls = await VideoCallRepository.findByWorkspace(projectId);
@@ -38,7 +38,7 @@ router.get('/:projectId/calls/history', authMiddleware, requireProjectRole('view
 // Get call detail
 router.get('/:projectId/calls/:callId', authMiddleware, requireProjectRole('viewer'), async (req: AuthRequest, res) => {
   try {
-    const { callId } = req.params;
+    const callId = req.params.callId as string;
     const userId = req.user!.id;
 
     const call = await VideoCallRepository.findByCallId(callId);

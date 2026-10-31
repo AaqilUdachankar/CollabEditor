@@ -17,6 +17,8 @@ export interface IVideoCall {
     callerName?: string;
     receiverName?: string;
     durationSeconds?: number;
+    participants?: string[];
+    [key: string]: any;
   };
   createdAt: string;
   updatedAt: string;
