@@ -1,38 +1,97 @@
 import React, { useState } from 'react';
-import { X, Code2, Globe, Server, FileCode, Cpu, Check } from 'lucide-react';
+import { X, Code2, Globe, Server, FileCode, Cpu, Coffee, Layers } from 'lucide-react';
 import { useSettingsStore } from '../../stores/settingsStore.js';
 import { useProjectStore } from '../../stores/projectStore.js';
 
-const TEMPLATES = [
+interface TemplateItem {
+  id: string;
+  name: string;
+  category: string;
+  desc: string;
+  conventions: string;
+  icon: React.ReactNode;
+}
+
+const TEMPLATES: TemplateItem[] = [
   {
-    id: 'vanilla',
-    name: 'Vanilla Web',
-    desc: 'HTML5, CSS3, and JavaScript with live preview.',
-    icon: <Globe size={20} color="#f97316" />,
+    id: 'python',
+    name: 'Python Application',
+    category: 'Python',
+    desc: 'Python 3 workspace with modular src/ structure and dependency manifests.',
+    conventions: 'src/main.py • requirements.txt • pyproject.toml',
+    icon: <FileCode size={20} color="#10b981" />,
+  },
+  {
+    id: 'java',
+    name: 'Java Application',
+    category: 'Java',
+    desc: 'Maven-compliant structure with public class Main in Main.java.',
+    conventions: 'src/main/java/Main.java • pom.xml',
+    icon: <Coffee size={20} color="#ea580c" />,
+  },
+  {
+    id: 'cpp',
+    name: 'C++ Workspace',
+    category: 'C/C++',
+    desc: 'C++17 modular project with GCC/G++ build runner and include paths.',
+    conventions: 'src/main.cpp • src/include • include/ • Makefile',
+    icon: <Cpu size={20} color="#818cf8" />,
+  },
+  {
+    id: 'c',
+    name: 'C Workspace',
+    category: 'C/C++',
+    desc: 'C11 modular project with GCC build runner and include conventions.',
+    conventions: 'src/main.c • src/include • include/ • Makefile',
+    icon: <Cpu size={20} color="#38bdf8" />,
+  },
+  {
+    id: 'typescript',
+    name: 'TypeScript Workspace',
+    category: 'JS/TS',
+    desc: 'ES-module TypeScript project with tsconfig and native runtime execution.',
+    conventions: 'package.json • tsconfig.json • src/index.ts',
+    icon: <FileCode size={20} color="#3b82f6" />,
+  },
+  {
+    id: 'javascript',
+    name: 'JavaScript / Node',
+    category: 'JS/TS',
+    desc: 'Modern Node.js ES module workspace with src/ conventions.',
+    conventions: 'package.json • src/index.js',
+    icon: <FileCode size={20} color="#facc15" />,
   },
   {
     id: 'react-vite',
     name: 'React + Vite',
+    category: 'Web',
     desc: 'Modern React 18 single-page app with Vite setup.',
+    conventions: 'src/App.jsx • package.json',
     icon: <Code2 size={20} color="#38bdf8" />,
   },
   {
     id: 'node-express',
     name: 'Node & Express API',
+    category: 'Web',
     desc: 'REST API backend server with Express routes.',
+    conventions: 'src/index.js • package.json',
     icon: <Server size={20} color="#22c55e" />,
   },
   {
-    id: 'python',
-    name: 'Python Application',
-    desc: 'Python 3 script workspace with math and utility modules.',
-    icon: <FileCode size={20} color="#eab308" />,
+    id: 'vanilla',
+    name: 'Vanilla Web',
+    category: 'Web',
+    desc: 'HTML5, CSS3, and JavaScript with live preview.',
+    conventions: 'index.html • style.css • main.js',
+    icon: <Globe size={20} color="#f97316" />,
   },
   {
-    id: 'cpp',
-    name: 'C/C++ Workspace',
-    desc: 'C++17 source files and GCC build runner.',
-    icon: <Cpu size={20} color="#818cf8" />,
+    id: 'empty',
+    name: 'Empty Workspace',
+    category: 'Custom',
+    desc: 'Blank canvas for custom folder conventions and custom tools.',
+    conventions: 'Unrestricted arbitrary custom files & folders',
+    icon: <Layers size={20} color="#94a3b8" />,
   },
 ];
 
@@ -42,7 +101,7 @@ export const NewProjectModal: React.FC = () => {
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
-  const [selectedTemplate, setSelectedTemplate] = useState('vanilla');
+  const [selectedTemplate, setSelectedTemplate] = useState('python');
   const [isPublic, setIsPublic] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -74,7 +133,7 @@ export const NewProjectModal: React.FC = () => {
     <div className="palette-overlay" onClick={() => setNewProjectModalOpen(false)}>
       <div
         className="palette-box"
-        style={{ width: '560px', padding: 0 }}
+        style={{ width: '640px', maxWidth: '90vw', maxHeight: '88vh', display: 'flex', flexDirection: 'column', padding: 0 }}
         onClick={(e) => e.stopPropagation()}
       >
         <div
@@ -87,9 +146,11 @@ export const NewProjectModal: React.FC = () => {
             borderBottom: '1px solid #3c3c3c',
           }}
         >
-          <span style={{ fontSize: 14, fontWeight: 600, color: 'white' }}>
-            Create New Project
-          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontSize: 14, fontWeight: 600, color: 'white' }}>
+              Create Language-Aware Workspace
+            </span>
+          </div>
           <button
             onClick={() => setNewProjectModalOpen(false)}
             style={{ background: 'transparent', border: 'none', color: '#858585', cursor: 'pointer' }}
@@ -98,16 +159,16 @@ export const NewProjectModal: React.FC = () => {
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} style={{ padding: '16px 18px' }}>
+        <form onSubmit={handleSubmit} style={{ padding: '16px 18px', overflowY: 'auto', flex: 1 }}>
           {/* Project Name */}
-          <div style={{ marginBottom: 14 }}>
+          <div style={{ marginBottom: 12 }}>
             <label style={{ display: 'block', fontSize: 12, color: '#cccccc', marginBottom: 4 }}>
               Project Name *
             </label>
             <input
               type="text"
               required
-              placeholder="e.g. my-awesome-app"
+              placeholder="e.g. collaborative-data-processor"
               value={name}
               onChange={(e) => setName(e.target.value)}
               style={{
@@ -131,7 +192,7 @@ export const NewProjectModal: React.FC = () => {
             </label>
             <input
               type="text"
-              placeholder="Brief summary of the workspace..."
+              placeholder="Brief summary of workspace goals..."
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               style={{
@@ -150,10 +211,25 @@ export const NewProjectModal: React.FC = () => {
 
           {/* Template Selection */}
           <div style={{ marginBottom: 16 }}>
-            <label style={{ display: 'block', fontSize: 12, color: '#cccccc', marginBottom: 6 }}>
-              Starter Template
-            </label>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+              <label style={{ fontSize: 12, color: '#cccccc' }}>
+                Language Template & Folder Conventions
+              </label>
+              <span style={{ fontSize: 11, color: '#94a3b8' }}>
+                Custom folders can be added freely anytime
+              </span>
+            </div>
+
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(2, 1fr)',
+                gap: 8,
+                maxHeight: '260px',
+                overflowY: 'auto',
+                paddingRight: '4px',
+              }}
+            >
               {TEMPLATES.map((tmpl) => {
                 const isSelected = selectedTemplate === tmpl.id;
                 return (
@@ -165,17 +241,38 @@ export const NewProjectModal: React.FC = () => {
                       alignItems: 'flex-start',
                       gap: 10,
                       padding: '10px',
-                      backgroundColor: isSelected ? 'rgba(0, 122, 204, 0.15)' : '#252526',
+                      backgroundColor: isSelected ? 'rgba(0, 122, 204, 0.18)' : '#252526',
                       border: `1px solid ${isSelected ? '#007acc' : '#3c3c3c'}`,
                       borderRadius: 4,
                       cursor: 'pointer',
+                      transition: 'border-color 0.15s ease',
                     }}
                   >
-                    <div>{tmpl.icon}</div>
+                    <div style={{ marginTop: 2 }}>{tmpl.icon}</div>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 12, fontWeight: 600, color: 'white' }}>{tmpl.name}</div>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <div style={{ fontSize: 12, fontWeight: 600, color: 'white' }}>{tmpl.name}</div>
+                      </div>
                       <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2, lineHeight: 1.2 }}>
                         {tmpl.desc}
+                      </div>
+                      <div
+                        style={{
+                          fontSize: 10,
+                          color: '#38bdf8',
+                          backgroundColor: '#1e293b',
+                          padding: '2px 6px',
+                          borderRadius: 3,
+                          marginTop: 5,
+                          fontFamily: 'monospace',
+                          display: 'inline-block',
+                          maxWidth: '100%',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {tmpl.conventions}
                       </div>
                     </div>
                   </div>
@@ -184,7 +281,7 @@ export const NewProjectModal: React.FC = () => {
             </div>
           </div>
 
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 20 }}>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 16 }}>
             <button
               type="button"
               onClick={() => setNewProjectModalOpen(false)}
@@ -214,7 +311,7 @@ export const NewProjectModal: React.FC = () => {
                 fontWeight: 500,
               }}
             >
-              {isSubmitting ? 'Creating...' : 'Create Project'}
+              {isSubmitting ? 'Creating...' : 'Create Workspace'}
             </button>
           </div>
         </form>
@@ -223,9 +320,9 @@ export const NewProjectModal: React.FC = () => {
         {projects.length > 0 && (
           <div style={{ padding: '12px 18px', borderTop: '1px solid #3c3c3c', backgroundColor: '#181818' }}>
             <div style={{ fontSize: 11, fontWeight: 600, color: '#858585', marginBottom: 8 }}>
-              OR OPEN RECENT PROJECT
+              OR OPEN RECENT WORKSPACE
             </div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, maxHeight: '65px', overflowY: 'auto' }}>
               {projects.map((p) => (
                 <button
                   key={p.id}
@@ -244,7 +341,7 @@ export const NewProjectModal: React.FC = () => {
                     fontSize: 11,
                   }}
                 >
-                  {p.name}
+                  {p.name} ({p.template})
                 </button>
               ))}
             </div>

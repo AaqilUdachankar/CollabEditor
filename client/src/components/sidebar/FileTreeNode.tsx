@@ -1,3 +1,4 @@
+import { LanguageIcon } from '../common/LanguageIcon.js';
 import React, { useState } from 'react';
 import {
   ChevronRight,
@@ -55,38 +56,7 @@ export const FileTreeNode: React.FC<FileTreeNodeProps> = ({ node, level, onConte
     setIsRenaming(false);
   };
 
-  const getFileIcon = (name: string) => {
-    const ext = name.split('.').pop()?.toLowerCase();
-    switch (ext) {
-      case 'js':
-      case 'jsx':
-        return <FileCode size={15} color="#eab308" />;
-      case 'ts':
-      case 'tsx':
-        return <FileCode size={15} color="#3b82f6" />;
-      case 'html':
-        return <Code size={15} color="#f97316" />;
-      case 'css':
-      case 'scss':
-        return <Code size={15} color="#06b6d4" />;
-      case 'json':
-        return <FileJson size={15} color="#eab308" />;
-      case 'py':
-        return <FileCode size={15} color="#10b981" />;
-      case 'java':
-        return <FileCode size={15} color="#ea580c" />;
-      case 'cpp':
-      case 'c++':
-      case 'cc':
-      case 'cxx':
-      case 'c':
-        return <FileCode size={15} color="#6366f1" />;
-      case 'md':
-        return <FileText size={15} color="#94a3b8" />;
-      default:
-        return <File size={15} color="#94a3b8" />;
-    }
-  };
+  
 
   return (
     <div>
@@ -108,7 +78,7 @@ export const FileTreeNode: React.FC<FileTreeNodeProps> = ({ node, level, onConte
           </span>
         ) : (
           <span style={{ display: 'flex', alignItems: 'center', marginLeft: 16 }}>
-            {getFileIcon(node.name)}
+            <LanguageIcon filename={node.name} size={15} />
           </span>
         )}
 
