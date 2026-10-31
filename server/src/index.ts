@@ -9,6 +9,7 @@ import apiRouter from './routes/index.js';
 import { setupSocketIO } from './sockets/index.js';
 import { setupYjsWebSocket } from './sockets/yjsHandler.js';
 import { setupTerminalWebSocket } from './sockets/terminalHandler.js';
+import { HealthMetricsService } from './services/healthMetricsService.js';
 
 const app = express();
 const server = http.createServer(app);
@@ -26,19 +27,20 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(cookieParser());
 
-// Request logging in development
-if (config.nodeEnv !== 'test') {
-  app.use((req, res, next) => {
-    const start = Date.now();
-    res.on('finish', () => {
-      const duration = Date.now() - start;
-      if (!req.url.startsWith('/api/health')) {
-        console.log(`[HTTP] ${req.method} ${req.originalUrl} ${res.statusCode} (${duration}ms)`);
-      }
-    });
-    next();
+// Global request logging & error tracking
+app.use((req, res, next) => {
+  const start = Date.now();
+  res.on('finish', () => {
+    const duration = Date.now() - start;
+    if (res.statusCode >= 500) {
+      HealthMetricsService.recordApiError();
+    }
+    if (config.nodeEnv !== 'test' && !req.url.startsWith('/api/health')) {
+      console.log(`[HTTP] ${req.method} ${req.originalUrl} ${res.statusCode} (${duration}ms)`);
+    }
   });
-}
+  next();
+});
 
 // Health check endpoint
 app.get('/api/health', (_req, res) => {

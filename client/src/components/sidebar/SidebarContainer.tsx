@@ -33,6 +33,10 @@ export const SidebarContainer: React.FC = () => {
     document.addEventListener('mouseup', handleMouseUp);
   };
 
+  if (activeActivity === 'admin') {
+    return null;
+  }
+
   return (
     <div style={{ display: 'flex', height: '100%' }}>
       <div

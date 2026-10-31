@@ -49,7 +49,7 @@ export class AuthController {
       const createdUser = await UserRepository.create(user);
 
       const token = jwt.sign(
-        { id: createdUser.id, email: createdUser.email, username: createdUser.username },
+        { id: createdUser.id, email: createdUser.email, username: createdUser.username, role: createdUser.role },
         config.jwtSecret,
         { expiresIn: '7d' }
       );
@@ -67,6 +67,9 @@ export class AuthController {
           email: createdUser.email,
           username: createdUser.username,
           avatarColor: createdUser.avatarColor,
+          role: createdUser.role,
+          status: createdUser.status,
+          lastActive: createdUser.lastActive,
         },
         token,
       });
@@ -97,8 +100,15 @@ export class AuthController {
         return;
       }
 
+      if (user.status === 'suspended') {
+        res.status(403).json({ error: 'Account suspended. Contact administrator.' });
+        return;
+      }
+
+      await UserRepository.updateLastActive(user.id);
+
       const token = jwt.sign(
-        { id: user.id, email: user.email, username: user.username },
+        { id: user.id, email: user.email, username: user.username, role: user.role },
         config.jwtSecret,
         { expiresIn: '7d' }
       );
@@ -116,6 +126,9 @@ export class AuthController {
           email: user.email,
           username: user.username,
           avatarColor: user.avatarColor,
+          role: user.role,
+          status: user.status,
+          lastActive: user.lastActive,
         },
         token,
       });
@@ -144,6 +157,9 @@ export class AuthController {
           email: user.email,
           username: user.username,
           avatarColor: user.avatarColor,
+          role: user.role,
+          status: user.status,
+          lastActive: user.lastActive,
         },
       });
     } catch (err: any) {
@@ -176,7 +192,7 @@ export class AuthController {
       const createdUser = await UserRepository.create(user);
 
       const token = jwt.sign(
-        { id: createdUser.id, email: createdUser.email, username: createdUser.username },
+        { id: createdUser.id, email: createdUser.email, username: createdUser.username, role: createdUser.role },
         config.jwtSecret,
         { expiresIn: '7d' }
       );
@@ -194,6 +210,9 @@ export class AuthController {
           email: createdUser.email,
           username: createdUser.username,
           avatarColor: createdUser.avatarColor,
+          role: createdUser.role,
+          status: createdUser.status,
+          lastActive: createdUser.lastActive,
         },
         token,
       });
