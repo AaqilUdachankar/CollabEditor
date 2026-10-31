@@ -5,6 +5,7 @@ import { ProjectMemberRepository } from '../models/ProjectMember.js';
 import { ProjectService } from '../services/projectService.js';
 import { FileNodeRepository } from '../models/FileNode.js';
 import { ExecutionService } from '../services/executionService.js';
+import { recordActivity } from '../services/activitySanitizer.js';
 import fs from 'fs';
 
 export class ProjectController {
@@ -71,6 +72,19 @@ export class ProjectController {
         Boolean(isPublic)
       );
 
+      recordActivity({
+        projectId: project.id,
+        userId: req.user!.id,
+        username: req.user!.username,
+        userEmail: req.user!.email,
+        eventType: 'project:create',
+        action: `Created workspace "${project.name}" (${template || 'vanilla'})`,
+        metadata: {
+          template: project.template,
+          isPublic: project.isPublic,
+        },
+      }).catch(() => {});
+
       res.status(201).json({ project: { ...project, role: 'owner' } });
     } catch (err: any) {
       console.error('[Create Project Error]', err);
@@ -93,6 +107,19 @@ export class ProjectController {
         res.status(404).json({ error: 'Project not found' });
         return;
       }
+
+      recordActivity({
+        projectId,
+        userId: req.user!.id,
+        username: req.user!.username,
+        userEmail: req.user!.email,
+        eventType: 'project:update',
+        action: `Updated workspace settings`,
+        metadata: {
+          name: updated.name,
+          isPublic: updated.isPublic,
+        },
+      }).catch(() => {});
 
       res.json({ project: updated });
     } catch (err: any) {
@@ -118,6 +145,15 @@ export class ProjectController {
 
       // 4. Remove project record
       await ProjectRepository.delete(projectId);
+
+      recordActivity({
+        projectId,
+        userId: req.user!.id,
+        username: req.user!.username,
+        userEmail: req.user!.email,
+        eventType: 'project:delete',
+        action: `Deleted workspace ${projectId}`,
+      }).catch(() => {});
 
       res.json({ message: 'Project successfully deleted' });
     } catch (err: any) {

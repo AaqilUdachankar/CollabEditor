@@ -11,10 +11,14 @@ import { NewProjectModal } from './components/modals/NewProjectModal.js';
 import { InviteModal } from './components/modals/InviteModal.js';
 import { SettingsModal } from './components/modals/SettingsModal.js';
 import { AuthModal } from './components/auth/AuthModal.js';
+
 import { VideoCallModal } from './components/videocall/VideoCallModal.js';
 import { IncomingCallBanner } from './components/videocall/IncomingCallBanner.js';
 import { IncomingWhiteboardBanner } from './components/whiteboard/IncomingWhiteboardBanner.js';
 import { WhiteboardWorkbench } from './components/whiteboard/WhiteboardWorkbench.js';
+
+import { AdminDashboard } from './components/admin/AdminDashboard.js';
+
 import { useAuthStore } from './stores/authStore.js';
 import { useProjectStore } from './stores/projectStore.js';
 import { useCollaborationStore } from './stores/collaborationStore.js';
@@ -26,7 +30,7 @@ import { socketService } from './services/socket.js';
 import { api } from './services/api.js';
 
 export const App: React.FC = () => {
-  const { loadMe, isAuthenticated } = useAuthStore();
+  const { loadMe, isAuthenticated, user } = useAuthStore();
   const {
     currentProject,
     projects,
@@ -39,6 +43,7 @@ export const App: React.FC = () => {
     handleRemoteFileSaved,
     handleRemoteFileRenamed,
     handleRemoteFileDeleted,
+    activeActivity,
     setActiveActivity,
   } = useProjectStore();
   const { setCollaborators, updateUserActivity } = useCollaborationStore();
@@ -234,8 +239,54 @@ export const App: React.FC = () => {
 
         {/* Workbench Center Area */}
         <div className="nexus-workbench-center">
-          <EditorWorkbench />
-          <BottomPanel />
+          {activeActivity === 'admin' ? (
+            user?.role === 'admin' ? (
+              <AdminDashboard />
+            ) : (
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  height: '100%',
+                  backgroundColor: '#181818',
+                  color: '#cccccc',
+                  padding: 32,
+                  textAlign: 'center',
+                }}
+              >
+                <div style={{ color: '#ef4444', fontSize: 18, fontWeight: 700, marginBottom: 8 }}>
+                  Access Denied
+                </div>
+                <div style={{ color: '#858585', fontSize: 13, maxWidth: 400, marginBottom: 16 }}>
+                  Platform administrator permissions are required to access account-wide user administration and platform metrics.
+                </div>
+                <button
+                  onClick={() => setActiveActivity('explorer')}
+                  style={{
+                    padding: '8px 16px',
+                    backgroundColor: '#007acc',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: 4,
+                    fontSize: 12,
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                  }}
+                >
+                  Return to Workspace
+                </button>
+              </div>
+            )
+          ) : (
+            <>
+              <EditorWorkbench />
+              <BottomPanel />
+    
+            </>
+          )}
+
         </div>
       </div>
 

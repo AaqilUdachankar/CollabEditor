@@ -8,7 +8,11 @@ import {
   Users,
   Settings,
   User as UserIcon,
+
   PenTool,
+
+  Shield,
+
 } from 'lucide-react';
 import { useProjectStore } from '../../stores/projectStore.js';
 import { useGitStore } from '../../stores/gitStore.js';
@@ -81,6 +85,7 @@ export const ActivityBar: React.FC = () => {
           {onlineCount > 0 && <span className="activity-badge">{onlineCount}</span>}
         </button>
 
+
         <button
           className={`activity-btn ${isOpen ? 'active' : ''}`}
           onClick={() => {
@@ -100,13 +105,25 @@ export const ActivityBar: React.FC = () => {
         >
           <PenTool size={22} />
         </button>
+
+        {user?.role === 'admin' && (
+          <button
+            className={`activity-btn ${activeActivity === 'admin' ? 'active' : ''}`}
+            onClick={() => setActiveActivity(activeActivity === 'admin' ? 'explorer' : 'admin')}
+            title="Admin Dashboard (Platform Management)"
+            style={{ color: activeActivity === 'admin' ? '#f43f5e' : '#a855f7' }}
+          >
+            <Shield size={22} />
+          </button>
+        )}
+
       </div>
 
       <div className="activity-bar-group">
         <button
           className="activity-btn"
           onClick={() => (isAuthenticated ? setAuthModalOpen(false) : setAuthModalOpen(true))}
-          title={isAuthenticated ? `Account: ${user?.username}` : 'Sign In'}
+          title={isAuthenticated ? `Account: ${user?.username} (${user?.role || 'user'})` : 'Sign In'}
         >
           {isAuthenticated && user ? (
             <div

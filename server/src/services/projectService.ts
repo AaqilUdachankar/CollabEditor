@@ -311,7 +311,8 @@ clean:
         'README.md': `# C++ Project Template
 Compile with: \`g++ -std=c++17 main.cpp -o main\`
 Run with: \`./main\` (or \`main.exe\` on Windows)`
-      }
+      },
+      empty: {}
     };
 
     const chosenTemplate = templates[template] || templates.vanilla;
