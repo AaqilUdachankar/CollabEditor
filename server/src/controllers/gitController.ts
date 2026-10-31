@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth.js';
 import { GitService } from '../services/gitService.js';
+import { recordActivity } from '../services/activitySanitizer.js';
 
 export class GitController {
   static async getStatus(req: AuthRequest, res: Response): Promise<void> {
@@ -78,6 +79,18 @@ export class GitController {
         req.user?.username,
         req.user?.email
       );
+      recordActivity({
+        projectId,
+        userId: req.user?.id || 'system',
+        username: req.user?.username || 'User',
+        userEmail: req.user?.email,
+        eventType: 'git:commit',
+        action: `Committed changes: "${message.trim().substring(0, 50)}"`,
+        metadata: {
+          commitMessage: message.trim(),
+        },
+      }).catch(() => {});
+
       res.json({ message: 'Commit successful', output });
     } catch (err: any) {
       res.status(400).json({ error: err.message || 'Failed to commit changes' });

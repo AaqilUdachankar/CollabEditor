@@ -5,6 +5,7 @@ import { InvitationRepository, IInvitation } from '../models/Invitation.js';
 import { ProjectMemberRepository, ProjectRole } from '../models/ProjectMember.js';
 import { ProjectRepository } from '../models/Project.js';
 import { UserRepository } from '../models/User.js';
+import { recordActivity } from '../services/activitySanitizer.js';
 
 export class CollaborationController {
   static async createInvitation(req: AuthRequest, res: Response): Promise<void> {
@@ -88,6 +89,18 @@ export class CollaborationController {
         });
       }
 
+      recordActivity({
+        projectId: project.id,
+        userId: req.user!.id,
+        username: req.user!.username,
+        userEmail: req.user!.email,
+        eventType: 'member:join',
+        action: `${req.user!.username} joined workspace with role ${invitation.role}`,
+        metadata: {
+          role: invitation.role,
+        },
+      }).catch(() => {});
+
       res.json({
         message: 'Successfully joined project',
         projectId: project.id,
@@ -158,6 +171,20 @@ export class CollaborationController {
       }
 
       const updated = await ProjectMemberRepository.updateRole(projectId, userId, role);
+
+      recordActivity({
+        projectId,
+        userId: req.user?.id || 'system',
+        username: req.user?.username || 'User',
+        userEmail: req.user?.email,
+        eventType: 'member:role_change',
+        action: `Changed member role to ${role}`,
+        metadata: {
+          targetUserId: userId,
+          newRole: role,
+        },
+      }).catch(() => {});
+
       res.json({ member: updated });
     } catch (err: any) {
       res.status(500).json({ error: 'Failed to update member role' });
@@ -169,6 +196,19 @@ export class CollaborationController {
       const projectId = String(req.params.projectId);
       const userId = String(req.params.userId);
       await ProjectMemberRepository.removeMember(projectId, userId);
+
+      recordActivity({
+        projectId,
+        userId: req.user?.id || 'system',
+        username: req.user?.username || 'User',
+        userEmail: req.user?.email,
+        eventType: 'member:leave',
+        action: `Removed member from workspace`,
+        metadata: {
+          targetUserId: userId,
+        },
+      }).catch(() => {});
+
       res.json({ message: 'Member removed from project' });
     } catch (err: any) {
       res.status(500).json({ error: 'Failed to remove member' });

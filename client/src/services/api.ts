@@ -1,4 +1,19 @@
-import { IUser, IProject, IFileNode, IGitStatus, IGitCommit, IFileVersion, ISearchResult } from '../types/ide.js';
+import {
+  IUser,
+  IProject,
+  IFileNode,
+  IGitStatus,
+  IGitCommit,
+  IFileVersion,
+  ISearchResult,
+  IActivityRecord,
+  IAdminOverview,
+  IAdminUser,
+  IAdminWorkspace,
+  ILiveSessionWorkspace,
+  IPerformanceData,
+  IAuditRecord,
+} from '../types/ide.js';
 
 const API_BASE = '/api';
 
@@ -230,5 +245,141 @@ export const api = {
 
     stopAll: (projectId: string) =>
       request<{ message: string }>(`/projects/${projectId}/stop`, { method: 'POST' }),
+  },
+
+  // Workspace-scoped Activities
+  activities: {
+    getWorkspaceActivities: (
+      projectId: string,
+      params: { eventType?: string; page?: number; limit?: number } = {}
+    ) => {
+      const q = new URLSearchParams();
+      if (params.eventType) q.set('eventType', params.eventType);
+      if (params.page) q.set('page', String(params.page));
+      if (params.limit) q.set('limit', String(params.limit));
+      const qs = q.toString() ? `?${q.toString()}` : '';
+      return request<{
+        activities: IActivityRecord[];
+        total: number;
+        page: number;
+        limit: number;
+        totalPages: number;
+      }>(`/projects/${projectId}/activities${qs}`);
+    },
+  },
+
+  // Admin Platform Operations (Admin Role Only)
+  admin: {
+    getOverview: () => request<{ overview: IAdminOverview }>('/admin/overview'),
+
+    getUsers: (params: { search?: string; role?: string; status?: string; page?: number; limit?: number } = {}) => {
+      const q = new URLSearchParams();
+      if (params.search) q.set('search', params.search);
+      if (params.role) q.set('role', params.role);
+      if (params.status) q.set('status', params.status);
+      if (params.page) q.set('page', String(params.page));
+      if (params.limit) q.set('limit', String(params.limit));
+      const qs = q.toString() ? `?${q.toString()}` : '';
+      return request<{
+        users: IAdminUser[];
+        total: number;
+        page: number;
+        limit: number;
+        totalPages: number;
+      }>(`/admin/users${qs}`);
+    },
+
+    updateUserRole: (userId: string, role: 'admin' | 'user') =>
+      request<{ user: IUser; message: string }>(`/admin/users/${userId}/role`, {
+        method: 'PATCH',
+        body: JSON.stringify({ role }),
+      }),
+
+    updateUserStatus: (userId: string, status: 'active' | 'suspended') =>
+      request<{ user: IUser; message: string }>(`/admin/users/${userId}/status`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status }),
+      }),
+
+    getSessions: () =>
+      request<{
+        activeSessionsCount: number;
+        activeUsersCount: number;
+        activeWorkspacesCount: number;
+        workspaces: ILiveSessionWorkspace[];
+      }>('/admin/sessions'),
+
+    getWorkspaces: (params: { search?: string; visibility?: string; template?: string; page?: number; limit?: number } = {}) => {
+      const q = new URLSearchParams();
+      if (params.search) q.set('search', params.search);
+      if (params.visibility) q.set('visibility', params.visibility);
+      if (params.template) q.set('template', params.template);
+      if (params.page) q.set('page', String(params.page));
+      if (params.limit) q.set('limit', String(params.limit));
+      const qs = q.toString() ? `?${q.toString()}` : '';
+      return request<{
+        workspaces: IAdminWorkspace[];
+        total: number;
+        page: number;
+        limit: number;
+        totalPages: number;
+      }>(`/admin/workspaces${qs}`);
+    },
+
+    getActivities: (params: {
+      search?: string;
+      eventType?: string;
+      workspaceId?: string;
+      userId?: string;
+      startDate?: string;
+      endDate?: string;
+      page?: number;
+      limit?: number;
+    } = {}) => {
+      const q = new URLSearchParams();
+      if (params.search) q.set('search', params.search);
+      if (params.eventType) q.set('eventType', params.eventType);
+      if (params.workspaceId) q.set('workspaceId', params.workspaceId);
+      if (params.userId) q.set('userId', params.userId);
+      if (params.startDate) q.set('startDate', params.startDate);
+      if (params.endDate) q.set('endDate', params.endDate);
+      if (params.page) q.set('page', String(params.page));
+      if (params.limit) q.set('limit', String(params.limit));
+      const qs = q.toString() ? `?${q.toString()}` : '';
+      return request<{
+        activities: IActivityRecord[];
+        total: number;
+        page: number;
+        limit: number;
+        totalPages: number;
+      }>(`/admin/activities${qs}`);
+    },
+
+    getPerformance: () => request<IPerformanceData>('/admin/performance'),
+
+    getAuditLogs: (params: {
+      search?: string;
+      actorId?: string;
+      action?: string;
+      targetType?: string;
+      page?: number;
+      limit?: number;
+    } = {}) => {
+      const q = new URLSearchParams();
+      if (params.search) q.set('search', params.search);
+      if (params.actorId) q.set('actorId', params.actorId);
+      if (params.action) q.set('action', params.action);
+      if (params.targetType) q.set('targetType', params.targetType);
+      if (params.page) q.set('page', String(params.page));
+      if (params.limit) q.set('limit', String(params.limit));
+      const qs = q.toString() ? `?${q.toString()}` : '';
+      return request<{
+        auditLogs: IAuditRecord[];
+        total: number;
+        page: number;
+        limit: number;
+        totalPages: number;
+      }>(`/admin/audit-logs${qs}`);
+    },
   },
 };

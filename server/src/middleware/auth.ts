@@ -4,17 +4,20 @@ import { v4 as uuidv4 } from 'uuid';
 import { config } from '../config/index.js';
 import { ProjectMemberRepository, ProjectRole } from '../models/ProjectMember.js';
 import { ProjectRepository } from '../models/Project.js';
+import { UserRepository, UserRole, UserStatus } from '../models/User.js';
 
 export interface AuthRequest extends Request {
   user?: {
     id: string;
     email: string;
     username: string;
+    role?: UserRole;
+    status?: UserStatus;
   };
   projectMemberRole?: ProjectRole;
 }
 
-export function authMiddleware(req: AuthRequest, res: Response, next: NextFunction): void {
+export async function authMiddleware(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
   const authHeader = req.headers.authorization;
   let token = '';
 
@@ -31,15 +34,51 @@ export function authMiddleware(req: AuthRequest, res: Response, next: NextFuncti
 
   try {
     const decoded = jwt.verify(token, config.jwtSecret) as any;
+    const userDoc = await UserRepository.findById(decoded.id);
+
+    if (userDoc && userDoc.status === 'suspended') {
+      res.status(403).json({ error: 'Forbidden: Account has been suspended.' });
+      return;
+    }
+
     req.user = {
       id: decoded.id,
       email: decoded.email,
       username: decoded.username,
+      role: userDoc?.role || decoded.role || 'user',
+      status: userDoc?.status || 'active',
     };
+
+    // Update lastActive timestamp non-blockingly
+    if (userDoc) {
+      UserRepository.updateLastActive(userDoc.id).catch(() => {});
+    }
+
     next();
   } catch (err) {
     res.status(401).json({ error: 'Invalid or expired authentication token.' });
   }
+}
+
+export async function requireAdminRole(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+  if (!req.user) {
+    res.status(401).json({ error: 'Authentication required' });
+    return;
+  }
+
+  const user = await UserRepository.findById(req.user.id);
+  if (!user || user.role !== 'admin') {
+    res.status(403).json({ error: 'Forbidden: Platform admin privileges required' });
+    return;
+  }
+
+  if (user.status === 'suspended') {
+    res.status(403).json({ error: 'Forbidden: Account suspended' });
+    return;
+  }
+
+  req.user.role = user.role;
+  next();
 }
 
 export function optionalAuthMiddleware(req: AuthRequest, _res: Response, next: NextFunction): void {
