@@ -57,8 +57,19 @@ export const TopMenuBar: React.FC = () => {
     if (!currentProject) return;
     const activeTab = tabs.find((t) => t.id === activeTabId);
     if (!activeTab) {
+      setIsRunning(true);
       openPanel('output');
-      addOutputLog('No active file to run. Open a runnable file (.js, .py, .cpp, .c, .java).', 'error');
+      addOutputLog(`[CollabIDE Runner] Launching project entry target for ${currentProject.name}...`, 'info');
+      try {
+        const res = await api.execution.runEntryFile(currentProject.id);
+        if (res.stdout) addOutputLog(res.stdout, 'info');
+        if (res.stderr) addOutputLog(res.stderr, 'error');
+        addOutputLog(`[Process exited with code ${res.exitCode} in ${res.durationMs}ms]`, res.exitCode === 0 ? 'success' : 'error');
+      } catch (err: any) {
+        addOutputLog(`Execution error: ${err.message}`, 'error');
+      } finally {
+        setIsRunning(false);
+      }
       return;
     }
 

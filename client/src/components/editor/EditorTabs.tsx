@@ -1,3 +1,4 @@
+import { LanguageIcon } from '../common/LanguageIcon.js';
 import React from 'react';
 import { X, Split, History, FileCode, Code, FileText, FileJson } from 'lucide-react';
 import { useEditorStore } from '../../stores/editorStore.js';
@@ -32,31 +33,7 @@ export const EditorTabs: React.FC<EditorTabsProps> = ({ isSplit = false }) => {
   const activeTab = currentTabs.find((t) => t.id === currentActiveId);
   const activeFile = files.find((f) => f.id === activeTab?.fileId);
 
-  const getFileIcon = (name: string) => {
-    const ext = name.split('.').pop()?.toLowerCase();
-    switch (ext) {
-      case 'js':
-      case 'jsx':
-        return <FileCode size={13} color="#eab308" />;
-      case 'ts':
-      case 'tsx':
-        return <FileCode size={13} color="#3b82f6" />;
-      case 'html':
-        return <Code size={13} color="#f97316" />;
-      case 'css':
-      case 'scss':
-        return <Code size={13} color="#06b6d4" />;
-      case 'json':
-        return <FileJson size={13} color="#eab308" />;
-      case 'py':
-        return <FileCode size={13} color="#10b981" />;
-      case 'cpp':
-      case 'c':
-        return <FileCode size={13} color="#6366f1" />;
-      default:
-        return <FileText size={13} color="#94a3b8" />;
-    }
-  };
+  
 
   return (
     <div className="editor-tabs-bar">
@@ -75,7 +52,7 @@ export const EditorTabs: React.FC<EditorTabsProps> = ({ isSplit = false }) => {
                 }
               }}
             >
-              {getFileIcon(tab.title)}
+              <LanguageIcon filename={tab.title} size={13} />
               <span>{tab.title}</span>
 
               {tab.isDirty ? (

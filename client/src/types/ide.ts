@@ -18,6 +18,7 @@ export interface IProject {
   template: string;
   isPublic: boolean;
   rootPath?: string;
+  entryFile?: string;
   role?: ProjectRole;
   createdAt: string;
   updatedAt: string;

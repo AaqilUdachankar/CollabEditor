@@ -1,3 +1,4 @@
+import { TEMPLATE_DEFINITIONS, resolveTemplateKey, getDefaultEntryFile } from './templates.js';
 import fs from 'fs';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
@@ -29,6 +30,7 @@ export class ProjectService {
       template,
       isPublic,
       rootPath: projectDir,
+      entryFile: this.getDefaultEntryFile(template),
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
@@ -50,272 +52,14 @@ export class ProjectService {
     return createdProject;
   }
 
+  static getDefaultEntryFile(template: string): string {
+    return getDefaultEntryFile(template);
+  }
+
   static async applyTemplate(projectId: string, template: string, projectDir: string): Promise<void> {
-    const templates: Record<string, { [filePath: string]: string }> = {
-      vanilla: {
-        'index.html': `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>CollabIDE Vanilla App</title>
-  <link rel="stylesheet" href="style.css" />
-</head>
-<body>
-  <div class="card">
-    <h1>🚀 Welcome to CollabIDE!</h1>
-    <p>A full-stack collaborative IDE running directly in your browser.</p>
-    <button id="counter-btn">Clicks: 0</button>
-  </div>
-  <script src="main.js"></script>
-</body>
-</html>`,
-        'style.css': `body {
-  margin: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 100vh;
-  background: #0f172a;
-  color: #f8fafc;
-  font-family: system-ui, -apple-system, sans-serif;
-}
-.card {
-  text-align: center;
-  padding: 2.5rem;
-  background: #1e293b;
-  border-radius: 12px;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4);
-  border: 1px solid #334155;
-}
-h1 {
-  font-size: 1.75rem;
-  margin-bottom: 0.75rem;
-  color: #38bdf8;
-}
-p {
-  color: #94a3b8;
-  margin-bottom: 1.5rem;
-}
-button {
-  background: #2563eb;
-  color: #fff;
-  border: none;
-  padding: 0.6rem 1.4rem;
-  font-size: 1rem;
-  font-weight: 500;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: background 0.15s ease;
-}
-button:hover {
-  background: #1d4ed8;
-}`,
-        'main.js': `let count = 0;
-const btn = document.getElementById('counter-btn');
-
-btn.addEventListener('click', () => {
-  count++;
-  btn.textContent = \`Clicks: \${count}\`;
-});
-
-console.log('CollabIDE App initialized successfully.');`,
-        'README.md': `# CollabIDE Vanilla Web Template
-Welcome to your new collaborative project in CollabIDE.
-- Edit \`index.html\`, \`style.css\`, or \`main.js\`.
-- Real-time changes appear instantly across all collaborators.
-- Click Run or use the terminal to test your code!`
-      },
-      'react-vite': {
-        'package.json': `{
-  "name": "collabide-react-vite-app",
-  "private": true,
-  "version": "0.0.1",
-  "type": "module",
-  "scripts": {
-    "dev": "vite",
-    "build": "vite build"
-  },
-  "dependencies": {
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1"
-  }
-}`,
-        'index.html': `<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>CollabIDE React App</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
-</html>`,
-        'src/main.jsx': `import React from 'react';
-import ReactDOM from 'react-dom/client';
-import App from './App.jsx';
-import './index.css';
-
-ReactDOM.createRoot(document.getElementById('root')).render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>
-);`,
-        'src/App.jsx': `import React, { useState } from 'react';
-
-export default function App() {
-  const [count, setCount] = useState(0);
-
-  return (
-    <div className="container">
-      <h1>⚡ CollabIDE React + Vite App</h1>
-      <p>Real-time collaborative editing with Monaco & Yjs.</p>
-      <button onClick={() => setCount(c => c + 1)}>
-        Count is {count}
-      </button>
-    </div>
-  );
-}`,
-        'src/index.css': `body {
-  margin: 0;
-  display: grid;
-  place-items: center;
-  min-height: 100vh;
-  background: #090d16;
-  color: #e2e8f0;
-  font-family: Inter, sans-serif;
-}
-.container {
-  padding: 2rem;
-  background: #111827;
-  border-radius: 8px;
-  border: 1px solid #1f2937;
-  text-align: center;
-}
-button {
-  background: #0ea5e9;
-  border: none;
-  color: white;
-  padding: 0.5rem 1rem;
-  border-radius: 4px;
-  cursor: pointer;
-}`,
-        'README.md': `# CollabIDE React + Vite Template
-A modern React starter configured for CollabIDE collaborative development.`
-      },
-      'node-express': {
-        'package.json': `{
-  "name": "collabide-express-api",
-  "version": "1.0.0",
-  "main": "src/index.js",
-  "scripts": {
-    "start": "node src/index.js"
-  },
-  "dependencies": {
-    "express": "^4.21.2"
-  }
-}`,
-        'src/index.js': `const express = require('express');
-const app = express();
-const PORT = process.env.PORT || 3000;
-
-app.use(express.json());
-
-app.get('/', (req, res) => {
-  res.json({ message: 'Hello from CollabIDE Express API!', timestamp: new Date().toISOString() });
-});
-
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'healthy', uptime: process.uptime() });
-});
-
-app.listen(PORT, () => {
-  console.log(\`CollabIDE API server running on port \${PORT}\`);
-});`,
-        'README.md': `# Node & Express API Template
-Run with: \`node src/index.js\` from the terminal.`
-      },
-      python: {
-        'main.py': `import sys
-from utils import greet, calculate_fibonacci
-
-def main():
-    print("=" * 45)
-    print("🚀 Running Python application in CollabIDE!")
-    print(f"Python Version: {sys.version.split()[0]}")
-    print("=" * 45)
-    
-    greeting = greet("CollabIDE Developer")
-    print(greeting)
-    
-    print("\\nGenerating Fibonacci Sequence:")
-    fib_series = calculate_fibonacci(10)
-    for idx, num in enumerate(fib_series, start=1):
-        print(f"Term {idx:2d}: {num}")
-    
-    print("\\nExecution finished successfully!")
-
-if __name__ == '__main__':
-    main()`,
-        'utils.py': `def greet(name: str) -> str:
-    return f"Hello, {name}! Welcome to the collaborative Python workspace."
-
-def calculate_fibonacci(n: int) -> list:
-    if n <= 0:
-        return []
-    sequence = [0, 1]
-    while len(sequence) < n:
-        sequence.append(sequence[-1] + sequence[-2])
-    return sequence[:n]`,
-        'requirements.txt': `# Add external Python dependencies here
-requests>=2.31.0
-pytest>=8.0.0`,
-        'README.md': `# Python Project Template
-Execute by clicking "Run File" or running \`python main.py\` in the terminal panel.`
-      },
-      cpp: {
-        'main.cpp': `#include <iostream>
-#include <vector>
-#include <numeric>
-
-int main() {
-    std::cout << "========================================" << std::endl;
-    std::cout << "🚀 CollabIDE C++ Workspace" << std::endl;
-    std::cout << "========================================" << std::endl;
-
-    std::vector<int> numbers = {10, 20, 30, 40, 50};
-    int sum = std::accumulate(numbers.begin(), numbers.end(), 0);
-
-    std::cout << "Elements: ";
-    for (int n : numbers) {
-        std::cout << n << " ";
-    }
-    std::cout << std::endl;
-    std::cout << "Total Sum = " << sum << std::endl;
-    std::cout << "Average = " << static_cast<double>(sum) / numbers.size() << std::endl;
-
-    return 0;
-}`,
-        'Makefile': `CXX = g++
-CXXFLAGS = -std=c++17 -Wall
-
-all: main
-
-main: main.cpp
-\t$(CXX) $(CXXFLAGS) -o main main.cpp
-
-clean:
-\trm -f main main.exe`,
-        'README.md': `# C++ Project Template
-Compile with: \`g++ -std=c++17 main.cpp -o main\`
-Run with: \`./main\` (or \`main.exe\` on Windows)`
-      },
-      empty: {}
-    };
-
-    const chosenTemplate = templates[template] || templates.vanilla;
+    const key = resolveTemplateKey(template);
+    const def = TEMPLATE_DEFINITIONS[key] || TEMPLATE_DEFINITIONS.vanilla;
+    const chosenTemplate = def.files;
 
     for (const [relPath, content] of Object.entries(chosenTemplate)) {
       const fullPath = path.join(projectDir, relPath);
@@ -387,6 +131,8 @@ Run with: \`./main\` (or \`main.exe\` on Windows)`
       '.yaml': 'yaml',
       '.yml': 'yaml',
       '.xml': 'xml',
+      '.toml': 'toml',
+      '.mk': 'makefile',
       '.txt': 'plaintext',
     };
     return map[ext] || 'plaintext';
