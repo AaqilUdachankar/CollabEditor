@@ -24,6 +24,23 @@ const MongoProjectMemberModel: Model<IProjectMember> = (mongoose.models.ProjectM
 const jsonMemberCollection = new JsonCollection<IProjectMember>('project_members');
 
 export const ProjectMemberRepository = {
+  async findAll(query?: Partial<IProjectMember> | ((item: IProjectMember) => boolean)): Promise<IProjectMember[]> {
+    if (isMongoActive()) {
+      const mongoQuery = typeof query === 'function' ? {} : (query || {});
+      const docs = await (MongoProjectMemberModel as any).find(mongoQuery).lean();
+      return docs as unknown as IProjectMember[];
+    }
+    return jsonMemberCollection.find(query);
+  },
+
+  async count(query?: any): Promise<number> {
+    if (isMongoActive()) {
+      return (MongoProjectMemberModel as any).countDocuments(query || {});
+    }
+    const all = await jsonMemberCollection.find(query);
+    return all.length;
+  },
+
   async findByProject(projectId: string): Promise<IProjectMember[]> {
     if (isMongoActive()) {
       const docs = await (MongoProjectMemberModel as any).find({ projectId }).lean();

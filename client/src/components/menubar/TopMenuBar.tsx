@@ -186,6 +186,11 @@ export const TopMenuBar: React.FC = () => {
                 }}>
                   <span>Toggle Split Editor</span>
                 </div>
+                {user?.role === 'admin' && (
+                  <div className="menu-dropdown-item" onClick={() => { setActiveActivity('admin'); setActiveMenu(null); }} style={{ color: '#c084fc' }}>
+                    <span>Admin Dashboard</span>
+                  </div>
+                )}
               </div>
             )}
           </div>

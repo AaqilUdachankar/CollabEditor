@@ -77,6 +77,23 @@ export const ProjectRepository = {
     return jsonProjectCollection.findByIdAndUpdate(id, { ...update, updatedAt: new Date().toISOString() });
   },
 
+  async findAll(query?: Partial<IProject> | ((item: IProject) => boolean)): Promise<IProject[]> {
+    if (isMongoActive()) {
+      const mongoQuery = typeof query === 'function' ? {} : (query || {});
+      const docs = await (MongoProjectModel as any).find(mongoQuery).lean();
+      return docs as unknown as IProject[];
+    }
+    return jsonProjectCollection.find(query);
+  },
+
+  async count(query?: any): Promise<number> {
+    if (isMongoActive()) {
+      return (MongoProjectModel as any).countDocuments(query || {});
+    }
+    const all = await jsonProjectCollection.find(query);
+    return all.length;
+  },
+
   async delete(id: string): Promise<boolean> {
     if (isMongoActive()) {
       const res = await (MongoProjectModel as any).deleteOne({ id });
