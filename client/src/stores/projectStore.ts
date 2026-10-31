@@ -1,3 +1,4 @@
+import { useEditorStore } from './editorStore.js';
 import { create } from 'zustand';
 import { IProject, IFileNode } from '../types/ide.js';
 import { api } from '../services/api.js';
@@ -84,6 +85,34 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
     try {
       const { files } = await api.files.getTree(projectId);
       set({ files, isLoadingFiles: false });
+
+      // Sensible entry file auto-open if no tabs currently open
+      const curProject = get().currentProject;
+      const configuredEntry = curProject?.entryFile;
+      let entryNode = configuredEntry
+        ? files.find((f) => f.type === 'file' && f.path.replace(/\\/g, '/') === configuredEntry.replace(/\\/g, '/'))
+        : null;
+
+      if (!entryNode) {
+        const candidates = [
+          'src/main.py', 'main.py',
+          'src/main/java/Main.java',
+          'src/main.cpp', 'main.cpp',
+          'src/main.c', 'main.c',
+          'src/index.ts', 'index.ts',
+          'src/index.js', 'index.js', 'main.js',
+          'src/App.jsx', 'src/App.tsx',
+          'index.html',
+        ];
+        for (const candidate of candidates) {
+          entryNode = files.find((f) => f.type === 'file' && f.path.replace(/\\/g, '/') === candidate) || null;
+          if (entryNode) break;
+        }
+      }
+
+      if (entryNode && useEditorStore.getState().tabs.length === 0) {
+        useEditorStore.getState().openTab(entryNode);
+      }
     } catch {
       set({ isLoadingFiles: false });
     }

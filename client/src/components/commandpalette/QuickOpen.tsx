@@ -1,3 +1,4 @@
+import { LanguageIcon } from '../common/LanguageIcon.js';
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, FileCode, FileText } from 'lucide-react';
 import { useSettingsStore } from '../../stores/settingsStore.js';
@@ -79,7 +80,7 @@ export const QuickOpen: React.FC = () => {
               onMouseEnter={() => setSelectedIndex(idx)}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <FileCode size={14} color="#38bdf8" />
+                <LanguageIcon filename={file.name} size={14} />
                 <span>{file.name}</span>
                 <span style={{ fontSize: 11, color: '#858585' }}>{file.path}</span>
               </div>

@@ -13,7 +13,8 @@
     "test:git": "tsx src/tests/git.test.ts",
     "test:terminal": "tsx src/tests/terminal.test.ts",
     "test:collab": "tsx src/tests/multiplayerCollaboration.test.ts",
-    "test:admin": "tsx src/tests/adminActivityAuth.test.ts"
+    "test:admin": "tsx src/tests/adminActivityAuth.test.ts",
+    "test:languages": "tsx src/tests/languageTemplatesExecution.test.ts"
   },
   "dependencies": {
     "adm-zip": "^0.5.16",

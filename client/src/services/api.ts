@@ -245,6 +245,33 @@ export const api = {
 
     stopAll: (projectId: string) =>
       request<{ message: string }>(`/projects/${projectId}/stop`, { method: 'POST' }),
+
+    runEntryFile: (projectId: string, content?: string) =>
+      request<{ stdout: string; stderr: string; exitCode: number; durationMs: number; timedOut: boolean; command?: string }>(
+        `/projects/${projectId}/run-entry`,
+        {
+          method: 'POST',
+          body: content !== undefined ? JSON.stringify({ content }) : undefined,
+        }
+      ),
+
+    getRunConfig: (projectId: string) =>
+      request<{
+        projectId: string;
+        projectName: string;
+        template: string;
+        entryFile: string;
+        entryFileId: string | null;
+        runnerInfo: {
+          language: string;
+          runner: string;
+          command: string;
+          toolRequired: string;
+          isToolInstalled: boolean;
+          folderConventions: string;
+        };
+        toolchains: Record<string, { installed: boolean; version?: string }>;
+      }>(`/projects/${projectId}/run-config`),
   },
 
   // Workspace-scoped Activities

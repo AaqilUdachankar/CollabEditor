@@ -10,6 +10,7 @@ export interface IProject {
   template: string;
   isPublic: boolean;
   rootPath: string;
+  entryFile?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -22,6 +23,7 @@ const ProjectSchema = new Schema<IProject>({
   template: { type: String, default: 'vanilla' },
   isPublic: { type: Boolean, default: false },
   rootPath: { type: String, required: true },
+  entryFile: { type: String, default: '' },
   createdAt: { type: String, default: () => new Date().toISOString() },
   updatedAt: { type: String, default: () => new Date().toISOString() },
 });

@@ -3,6 +3,7 @@ import path from 'path';
 import fs from 'fs';
 import { ProjectService } from './projectService.js';
 import { FileNodeRepository } from '../models/FileNode.js';
+import { ProjectRepository } from '../models/Project.js';
 import { config } from '../config/index.js';
 
 export interface ExecutionResult {
@@ -17,6 +18,52 @@ export interface ExecutionResult {
 export class ExecutionService {
   private static activeProcesses: Map<string, ChildProcess> = new Map();
 
+
+  static formatToolMissingError(toolName: string, languageName: string, installGuidance: string, filePath: string): string {
+    const osName = process.platform === 'win32' ? 'Windows' : process.platform === 'darwin' ? 'macOS' : 'Linux';
+    return [
+      `[CollabIDE Toolchain Error] Required ${languageName} tool '${toolName}' is not installed or not found in system PATH.`,
+      `• Target file: ${filePath}`,
+      `• Operating system: ${osName}`,
+      `• Resolution: ${installGuidance}`,
+      `• Alternative: Use the integrated terminal to run with custom paths or containerized runtimes.`,
+    ].join('\n');
+  }
+
+  static getPythonCommand(): string {
+    for (const bin of ['python', 'python3', 'py']) {
+      try {
+        const res = spawnSync(bin, ['--version'], { stdio: 'pipe', env: ExecutionService.getSafeEnv() });
+        if (res.status === 0) return bin;
+      } catch {}
+    }
+    return 'python';
+  }
+
+  static getAvailableToolchains(): Record<string, { installed: boolean; version?: string }> {
+    const probe = (bin: string, args: string[]): { installed: boolean; version?: string } => {
+      try {
+        const res = spawnSync(bin, args, { stdio: 'pipe', timeout: 3000, env: ExecutionService.getSafeEnv() });
+        if (res.status === 0) {
+          const out = (res.stdout?.toString() || res.stderr?.toString() || '').trim().split('\n')[0];
+          return { installed: true, version: out };
+        }
+      } catch {}
+      return { installed: false };
+    };
+
+    const pyCmd = this.getPythonCommand();
+    const pyProbe = probe(pyCmd, ['--version']);
+
+    return {
+      node: probe(process.execPath, ['--version']),
+      python: { installed: pyProbe.installed, version: pyProbe.version },
+      java: probe('java', ['-version']),
+      gcc: probe('gcc', ['--version']),
+      gpp: probe('g++', ['--version']),
+    };
+  }
+
   static getSafeEnv(): NodeJS.ProcessEnv {
     // Copy all system environment variables, omitting sensitive secrets and credentials
     const safeEnv = { ...process.env };
@@ -29,6 +76,132 @@ export class ExecutionService {
     safeEnv.TERM = 'xterm-256color';
     safeEnv.COLORTERM = 'truecolor';
     return safeEnv;
+  }
+
+  static async runEntryFile(projectId: string, contentOverride?: string): Promise<ExecutionResult> {
+    const project = await ProjectRepository.findById(projectId);
+    if (!project) throw new Error('Project not found');
+
+    const files = await FileNodeRepository.findByProject(projectId);
+    const configuredEntry = project.entryFile || ProjectService.getDefaultEntryFile(project.template);
+
+    let targetFile = configuredEntry ? files.find((f) => f.type === 'file' && f.path.replace(/\\/g, '/') === configuredEntry.replace(/\\/g, '/')) : null;
+
+    if (!targetFile) {
+      // Fallback heuristics: find common sensible entry files
+      const candidates = [
+        'src/main.py', 'main.py',
+        'src/main.java/Main.java', 'src/main/java/Main.java', 'Main.java',
+        'src/main.cpp', 'main.cpp',
+        'src/main.c', 'main.c',
+        'src/index.ts', 'index.ts',
+        'src/index.js', 'index.js', 'main.js',
+        'src/App.jsx', 'src/App.tsx',
+        'index.html'
+      ];
+      for (const candidate of candidates) {
+        targetFile = files.find((f) => f.type === 'file' && f.path.replace(/\\/g, '/') === candidate) || null;
+        if (targetFile) break;
+      }
+    }
+
+    if (!targetFile) {
+      // Fallback to any runnable source file
+      targetFile = files.find((f) => f.type === 'file' && /\.(py|java|cpp|c|ts|js|mjs|cjs|html)$/i.test(f.name)) || null;
+    }
+
+    if (!targetFile) {
+      throw new Error(`No runnable entry file found in project workspace (${project.name}). Please create or select a runnable source file.`);
+    }
+
+    return this.runFile(projectId, targetFile.id, contentOverride);
+  }
+
+  static async getRunConfig(projectId: string) {
+    const project = await ProjectRepository.findById(projectId);
+    if (!project) throw new Error('Project not found');
+
+    const files = await FileNodeRepository.findByProject(projectId);
+    const defaultEntry = project.entryFile || ProjectService.getDefaultEntryFile(project.template);
+    const entryNode = files.find((f) => f.type === 'file' && f.path.replace(/\\/g, '/') === defaultEntry.replace(/\\/g, '/'));
+
+    const toolchains = this.getAvailableToolchains();
+
+    let runnerInfo = {
+      language: 'generic',
+      runner: 'integrated-terminal',
+      command: 'Select a file to run',
+      toolRequired: '',
+      isToolInstalled: true,
+      folderConventions: 'Custom workspace structure',
+    };
+
+    const tmpl = (project.template || '').toLowerCase();
+    if (tmpl === 'python' || tmpl === 'py') {
+      runnerInfo = {
+        language: 'python',
+        runner: 'Python 3',
+        command: 'python -u src/main.py',
+        toolRequired: 'python',
+        isToolInstalled: toolchains.python.installed,
+        folderConventions: 'src/ for source code; requirements.txt or pyproject.toml for dependencies',
+      };
+    } else if (tmpl === 'cpp' || tmpl === 'c++') {
+      runnerInfo = {
+        language: 'cpp',
+        runner: 'GCC C++ Compiler (g++)',
+        command: 'g++ -std=c++17 -Isrc/include -Iinclude src/main.cpp -o runner && ./runner',
+        toolRequired: 'g++',
+        isToolInstalled: toolchains.gpp.installed,
+        folderConventions: 'src/include and include/ for headers; src/main.cpp entry point; Makefile',
+      };
+    } else if (tmpl === 'c') {
+      runnerInfo = {
+        language: 'c',
+        runner: 'GCC C Compiler (gcc)',
+        command: 'gcc -std=c11 -Isrc/include -Iinclude src/main.c -o runner && ./runner',
+        toolRequired: 'gcc',
+        isToolInstalled: toolchains.gcc.installed,
+        folderConventions: 'src/include and include/ for headers; src/main.c entry point; Makefile',
+      };
+    } else if (tmpl === 'java') {
+      runnerInfo = {
+        language: 'java',
+        runner: 'Java SE (java)',
+        command: 'java src/main/java/Main.java',
+        toolRequired: 'java',
+        isToolInstalled: toolchains.java.installed,
+        folderConventions: 'src/main/java for source classes; public class Main matching filename; pom.xml',
+      };
+    } else if (tmpl === 'typescript' || tmpl === 'ts') {
+      runnerInfo = {
+        language: 'typescript',
+        runner: 'Node.js (Native TS Strip Types)',
+        command: 'node --experimental-strip-types src/index.ts',
+        toolRequired: 'node',
+        isToolInstalled: toolchains.node.installed,
+        folderConventions: 'package.json and tsconfig.json; src/ for source modules',
+      };
+    } else if (tmpl === 'javascript' || tmpl === 'js' || tmpl === 'node' || tmpl === 'node-express') {
+      runnerInfo = {
+        language: 'javascript',
+        runner: 'Node.js',
+        command: 'node src/index.js',
+        toolRequired: 'node',
+        isToolInstalled: toolchains.node.installed,
+        folderConventions: 'package.json and src/ folder convention',
+      };
+    }
+
+    return {
+      projectId,
+      projectName: project.name,
+      template: project.template,
+      entryFile: defaultEntry,
+      entryFileId: entryNode ? entryNode.id : null,
+      runnerInfo,
+      toolchains,
+    };
   }
 
   static async runFile(projectId: string, fileId: string, contentOverride?: string): Promise<ExecutionResult> {
@@ -61,6 +234,7 @@ export class ExecutionService {
     const startTime = Date.now();
     let cmd = '';
     let args: string[] = [];
+    const executionEnv = this.getSafeEnv();
 
     switch (ext) {
       case '.js':
@@ -69,10 +243,20 @@ export class ExecutionService {
         cmd = process.execPath;
         args = [fullFilePath];
         break;
-      case '.py':
-        cmd = 'python';
-        args = ['-u', fullFilePath];
+      case '.ts':
+      case '.tsx':
+        cmd = process.execPath;
+        args = ['--experimental-strip-types', fullFilePath];
         break;
+      case '.py': {
+        cmd = this.getPythonCommand();
+        args = ['-u', fullFilePath];
+        const srcDir = path.join(projectDir, 'src');
+        const fileDir = path.dirname(fullFilePath);
+        const existingPyPath = executionEnv.PYTHONPATH ? `${executionEnv.PYTHONPATH}${path.delimiter}` : '';
+        executionEnv.PYTHONPATH = `${existingPyPath}${srcDir}${path.delimiter}${fileDir}${path.delimiter}${projectDir}`;
+        break;
+      }
       case '.java':
         cmd = 'java';
         args = [fullFilePath];
@@ -87,20 +271,39 @@ export class ExecutionService {
         const compiler = isCpp ? 'g++' : 'gcc';
         const outName = path.join(projectDir, process.platform === 'win32' ? 'runner.exe' : 'runner');
 
-        // Compile first with distinct arguments (no shell mangling of paths with spaces)
+        // Include directories convention
+        const includeFlags: string[] = [];
+        const inc1 = path.join(projectDir, 'src', 'include');
+        const inc2 = path.join(projectDir, 'include');
+        const inc3 = path.join(projectDir, 'src');
+        if (fs.existsSync(inc1)) includeFlags.push('-I', inc1);
+        if (fs.existsSync(inc2)) includeFlags.push('-I', inc2);
+        if (fs.existsSync(inc3)) includeFlags.push('-I', inc3);
+
+        const compileArgs = [...includeFlags, fullFilePath, '-o', outName];
+        if (isCpp) compileArgs.unshift('-std=c++17');
+        else compileArgs.unshift('-std=c11');
+
         const compileRes = await new Promise<{ stdout: string; stderr: string; code: number | null }>((resolveCompile) => {
           let cStdout = '';
           let cStderr = '';
-          const compileProc = spawn(compiler, [fullFilePath, '-o', outName], {
+          const compileProc = spawn(compiler, compileArgs, {
             cwd: projectDir,
-            env: this.getSafeEnv(),
+            env: executionEnv,
             shell: false,
           });
 
           compileProc.stdout?.on('data', (d) => { cStdout += d.toString(); });
           compileProc.stderr?.on('data', (d) => { cStderr += d.toString(); });
-          compileProc.on('error', (err) => {
-            resolveCompile({ stdout: cStdout, stderr: cStderr + `\nCompiler error: ${err.message}`, code: 1 });
+          compileProc.on('error', (err: any) => {
+            const isMissing = err.code === 'ENOENT' || err.message?.includes('ENOENT');
+            const guidance = isCpp
+              ? 'Install GCC/G++ (e.g. MinGW-w64 on Windows, build-essential on Linux, or Xcode tools on macOS).'
+              : 'Install GCC (e.g. MinGW-w64 on Windows, build-essential on Linux, or Xcode tools on macOS).';
+            const errMsg = isMissing
+              ? ExecutionService.formatToolMissingError(compiler, isCpp ? 'C++' : 'C', guidance, file.path)
+              : `Compiler error: ${err.message}`;
+            resolveCompile({ stdout: cStdout, stderr: cStderr + (cStderr ? '\n' : '') + errMsg, code: 127 });
           });
           compileProc.on('close', (code) => {
             resolveCompile({ stdout: cStdout, stderr: cStderr, code });
@@ -113,9 +316,16 @@ export class ExecutionService {
             stderr: compileRes.stderr || `[CollabIDE Compilation] Build failed with exit code ${compileRes.code}`,
             exitCode: compileRes.code ?? 1,
             durationMs: Date.now() - startTime,
-            command: `${compiler} "${file.name}" -o runner`,
+            command: `${compiler} ${compileArgs.join(' ')}`,
             timedOut: false,
           };
+        }
+
+        // Ensure executable permissions on Unix platforms
+        if (process.platform !== 'win32') {
+          try {
+            fs.chmodSync(outName, 0o755);
+          } catch {}
         }
 
         cmd = outName;
@@ -133,7 +343,7 @@ export class ExecutionService {
           timedOut: false,
         };
       default:
-        throw new Error(`Execution not supported for file type "${ext}". Run files via the integrated terminal.`);
+        throw new Error(`Execution not supported for file type "${ext}". Supported types: .py, .java, .c, .cpp, .js, .ts. Run other files via the integrated terminal.`);
     }
 
     let stdoutBuffer = '';
@@ -143,7 +353,7 @@ export class ExecutionService {
     return new Promise((resolve) => {
       const child = spawn(cmd, args, {
         cwd: projectDir,
-        env: this.getSafeEnv(),
+        env: executionEnv,
         shell: false,
       });
 
@@ -167,13 +377,42 @@ export class ExecutionService {
         }
       });
 
-      child.on('error', (err) => {
+      child.on('error', (err: any) => {
         clearTimeout(timer);
         this.activeProcesses.delete(procId);
+
+        const isMissing = err.code === 'ENOENT' || err.message?.includes('ENOENT');
+        let errMsg = `Process error: ${err.message}`;
+
+        if (isMissing) {
+          if (cmd === 'java') {
+            errMsg = ExecutionService.formatToolMissingError(
+              'java',
+              'Java',
+              'Install Java Development Kit (JDK 11+) from https://adoptium.net/ and ensure "java" is added to system PATH.',
+              file.path
+            );
+          } else if (cmd.startsWith('python') || cmd === 'py') {
+            errMsg = ExecutionService.formatToolMissingError(
+              cmd,
+              'Python',
+              'Install Python 3 from https://www.python.org/downloads/ and ensure "python" or "python3" is added to system PATH.',
+              file.path
+            );
+          } else {
+            errMsg = ExecutionService.formatToolMissingError(
+              cmd,
+              'Runtime',
+              `Ensure "${cmd}" is installed and available in your environment PATH.`,
+              file.path
+            );
+          }
+        }
+
         resolve({
           stdout: stdoutBuffer,
-          stderr: stderrBuffer + `\nProcess error: ${err.message}`,
-          exitCode: 1,
+          stderr: stderrBuffer + (stderrBuffer ? '\n' : '') + errMsg,
+          exitCode: isMissing ? 127 : 1,
           durationMs: Date.now() - startTime,
           command: `${cmd} ${args.join(' ')}`,
           timedOut: false,
