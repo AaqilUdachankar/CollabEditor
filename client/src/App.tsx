@@ -11,10 +11,17 @@ import { NewProjectModal } from './components/modals/NewProjectModal.js';
 import { InviteModal } from './components/modals/InviteModal.js';
 import { SettingsModal } from './components/modals/SettingsModal.js';
 import { AuthModal } from './components/auth/AuthModal.js';
+import { VideoCallModal } from './components/videocall/VideoCallModal.js';
+import { IncomingCallBanner } from './components/videocall/IncomingCallBanner.js';
+import { IncomingWhiteboardBanner } from './components/whiteboard/IncomingWhiteboardBanner.js';
+import { WhiteboardWorkbench } from './components/whiteboard/WhiteboardWorkbench.js';
 import { useAuthStore } from './stores/authStore.js';
 import { useProjectStore } from './stores/projectStore.js';
 import { useCollaborationStore } from './stores/collaborationStore.js';
 import { useSettingsStore } from './stores/settingsStore.js';
+import { useVideoCallStore } from './stores/videoCallStore.js';
+import { useWhiteboardStore } from './stores/whiteboardStore.js';
+import { webrtcService } from './services/webrtcService.js';
 import { socketService } from './services/socket.js';
 import { api } from './services/api.js';
 
@@ -115,6 +122,69 @@ export const App: React.FC = () => {
       handleRemoteFileDeleted(fileId);
     });
 
+    // 1-to-1 Private Video Calling Socket Listeners
+    const unsubCallIncoming = socketService.onCallIncoming((data) => {
+      useVideoCallStore.getState().handleIncomingCall(data);
+    });
+
+    const unsubCallAccept = socketService.onCallAccept(async (data) => {
+      const store = useVideoCallStore.getState();
+      if (store.callId === data.callId && data.responderId) {
+        store.addPeer({
+          userId: data.responderId,
+          username: data.responderName || 'Teammate',
+          avatarColor: data.avatarColor || '#10b981',
+        });
+        // Create WebRTC connection with this peer
+        webrtcService.initPeerConnection(data.callId, data.responderId);
+        await webrtcService.createOffer(data.callId, data.responderId);
+      } else if (store.peer) {
+        await webrtcService.createOffer(data.callId, store.peer.userId);
+      }
+    });
+
+    const unsubCallReject = socketService.onCallReject((data) => {
+      alert(`Call declined: ${data.reason || 'User busy'}`);
+      useVideoCallStore.getState().clearCall();
+    });
+
+    const unsubCallOffer = socketService.onCallOffer(async (data) => {
+      await webrtcService.handleOffer(data.callId, data.callerId, data.sdp);
+    });
+
+    const unsubCallAnswer = socketService.onCallAnswer(async (data) => {
+      await webrtcService.handleAnswer(data.sdp, data.responderId);
+    });
+
+    const unsubCallIce = socketService.onCallIceCandidate(async (data) => {
+      await webrtcService.addIceCandidate(data.candidate, data.senderId);
+    });
+
+    const unsubCallEnd = socketService.onCallEnd(() => {
+      useVideoCallStore.getState().endCall();
+    });
+
+    // Private Miro-Style Whiteboard Socket Listeners
+    const unsubBoardIncoming = socketService.onBoardIncoming((data) => {
+      useWhiteboardStore.getState().handleIncomingInvite(data);
+    });
+
+    const unsubBoardReject = socketService.onBoardReject((data) => {
+      alert(`Whiteboard invitation declined: ${data.reason || 'Declined'}`);
+    });
+
+    const unsubBoardOp = socketService.onBoardOperation((data) => {
+      useWhiteboardStore.getState().applyRemoteOperation(data.operation);
+    });
+
+    const unsubBoardSync = socketService.onBoardSync((data) => {
+      useWhiteboardStore.getState().syncRemoteCanvas(data.canvasData?.elements);
+    });
+
+    const unsubBoardCursor = socketService.onBoardCursor((data) => {
+      useWhiteboardStore.getState().updatePeerCursor(data);
+    });
+
     return () => {
       unsubPresence();
       unsubActivity();
@@ -122,6 +192,18 @@ export const App: React.FC = () => {
       unsubFileSaved();
       unsubFileRenamed();
       unsubFileDeleted();
+      unsubCallIncoming();
+      unsubCallAccept();
+      unsubCallReject();
+      unsubCallOffer();
+      unsubCallAnswer();
+      unsubCallIce();
+      unsubCallEnd();
+      unsubBoardIncoming();
+      unsubBoardReject();
+      unsubBoardOp();
+      unsubBoardSync();
+      unsubBoardCursor();
     };
   }, []);
 
@@ -167,6 +249,12 @@ export const App: React.FC = () => {
       <InviteModal />
       <SettingsModal />
       <AuthModal />
+
+      {/* Private Video Calling & Miro Whiteboard Overlays */}
+      <VideoCallModal />
+      <IncomingCallBanner />
+      <IncomingWhiteboardBanner />
+      <WhiteboardWorkbench />
     </div>
   );
 };

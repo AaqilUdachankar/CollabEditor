@@ -28,6 +28,8 @@ export class ExecutionService {
     }
     safeEnv.TERM = 'xterm-256color';
     safeEnv.COLORTERM = 'truecolor';
+    safeEnv.PYTHONIOENCODING = 'utf-8';
+    safeEnv.PYTHONUTF8 = '1';
     return safeEnv;
   }
 

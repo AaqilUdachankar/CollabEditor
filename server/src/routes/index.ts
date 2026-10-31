@@ -6,6 +6,8 @@ import collaborationRoutes from './collaborationRoutes.js';
 import gitRoutes from './gitRoutes.js';
 import executionRoutes from './executionRoutes.js';
 import historyRoutes from './historyRoutes.js';
+import whiteboardRoutes from './whiteboardRoutes.js';
+import videoCallRoutes from './videoCallRoutes.js';
 
 const router = Router();
 
@@ -16,5 +18,7 @@ router.use('/projects', historyRoutes);
 router.use('/projects', collaborationRoutes);
 router.use('/projects', gitRoutes);
 router.use('/projects', executionRoutes);
+router.use('/projects', whiteboardRoutes);
+router.use('/projects', videoCallRoutes);
 
 export default router;
