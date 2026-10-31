@@ -12,7 +12,7 @@ const router = Router();
 // List all private whiteboards the current user has access to in this project
 router.get('/:projectId/whiteboards', authMiddleware, requireProjectRole('viewer'), async (req: AuthRequest, res) => {
   try {
-    const { projectId } = req.params;
+    const projectId = req.params.projectId as string;
     const userId = req.user!.id;
 
     const boards = await PrivateWhiteboardRepository.findByWorkspaceAndUser(projectId, userId);
@@ -43,7 +43,7 @@ router.get('/:projectId/whiteboards', authMiddleware, requireProjectRole('viewer
 // Get a specific private whiteboard by boardId
 router.get('/:projectId/whiteboards/:boardId', authMiddleware, requireProjectRole('viewer'), async (req: AuthRequest, res) => {
   try {
-    const { projectId, boardId } = req.params;
+    const { projectId, boardId } = req.params as { projectId: string; boardId: string };
     const userId = req.user!.id;
 
     const board = await PrivateWhiteboardRepository.findByBoardId(boardId);
@@ -85,7 +85,7 @@ router.get('/:projectId/whiteboards/:boardId', authMiddleware, requireProjectRol
 // Create a new private whiteboard for selected participants
 router.post('/:projectId/whiteboards', authMiddleware, requireProjectRole('editor'), async (req: AuthRequest, res) => {
   try {
-    const { projectId } = req.params;
+    const projectId = req.params.projectId as string;
     const userId = req.user!.id;
     const { title, targetUserId, initialCanvasData } = req.body;
 
@@ -137,7 +137,7 @@ router.post('/:projectId/whiteboards', authMiddleware, requireProjectRole('edito
 // Update whiteboard canvas data
 router.put('/:projectId/whiteboards/:boardId', authMiddleware, requireProjectRole('editor'), async (req: AuthRequest, res) => {
   try {
-    const { projectId, boardId } = req.params;
+    const { projectId, boardId } = req.params as { projectId: string; boardId: string };
     const userId = req.user!.id;
     const { canvasData } = req.body;
 
@@ -163,7 +163,7 @@ router.put('/:projectId/whiteboards/:boardId', authMiddleware, requireProjectRol
 // Invite friend or collaborator to an active whiteboard
 router.post('/:projectId/whiteboards/:boardId/invite', authMiddleware, requireProjectRole('viewer'), async (req: AuthRequest, res) => {
   try {
-    const { projectId, boardId } = req.params;
+    const { projectId, boardId } = req.params as { projectId: string; boardId: string };
     const userId = req.user!.id;
     const { targetUserId } = req.body;
 
@@ -198,7 +198,7 @@ router.post('/:projectId/whiteboards/:boardId/invite', authMiddleware, requirePr
 // Delete or close private whiteboard
 router.delete('/:projectId/whiteboards/:boardId', authMiddleware, requireProjectRole('viewer'), async (req: AuthRequest, res) => {
   try {
-    const { projectId, boardId } = req.params;
+    const { projectId, boardId } = req.params as { projectId: string; boardId: string };
     const userId = req.user!.id;
 
     const board = await PrivateWhiteboardRepository.findByBoardId(boardId);
