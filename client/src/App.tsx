@@ -280,10 +280,8 @@ export const App: React.FC = () => {
             <>
               <EditorWorkbench />
               <BottomPanel />
-    
             </>
           )}
-
         </div>
       </div>
 

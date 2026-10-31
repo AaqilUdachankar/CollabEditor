@@ -101,6 +101,7 @@ export const ActivityBar: React.FC = () => {
         >
           <PenTool size={22} />
         </button>
+
         {user?.role === 'admin' && (
           <button
             className={`activity-btn ${activeActivity === 'admin' ? 'active' : ''}`}
